@@ -1,0 +1,2956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luke Dugan | Digital Portfolio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brandBlue: '#5c98f8',
+                        brandCyan: '#05def1',
+                        brandNavy: '#000080',
+                        darkBg: '#222222',
+                        darkCard: '#2c2c2c'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+    <style>
+        /* Smooth Scroll & Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #5c98f8;
+            border-radius: 4px;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass-card {
+            background: rgba(44, 44, 44, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Odometer 3D Bit Flip Effect */
+        .bit-card-inner {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .bit-card-flip {
+            transform: rotateX(360deg);
+        }
+
+        /* Glow effects for active bits */
+        .bit-active {
+            background: linear-gradient(135deg, #05def1 0%, #3b82f6 100%);
+            box-shadow: 0 0 15px rgba(5, 222, 241, 0.5);
+            color: #0f172a;
+        }
+
+        .crossword-grid {
+            display: grid;
+            grid-template-columns: repeat(21, 2rem);
+            grid-auto-rows: 2rem;
+            gap: 1px;
+            width: max-content;
+            background: #94a3b8;
+            border: 1px solid #94a3b8;
+        }
+        .crossword-cell {
+            position: relative;
+            width: 2rem;
+            height: 2rem;
+            background: #fff;
+        }
+        .dark .crossword-cell {
+            background: #e2e8f0;
+        }
+        .crossword-cell input {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: transparent;
+            color: #0f172a;
+            font: 800 1rem/1 sans-serif;
+            text-align: center;
+            text-transform: uppercase;
+            outline: 2px solid transparent;
+            outline-offset: -2px;
+        }
+        .crossword-cell input:focus,
+        .crossword-cell-active {
+            outline: 2px solid #05def1 !important;
+            outline-offset: -2px;
+            z-index: 1;
+        }
+        .crossword-cell-black {
+            background: #1e293b;
+        }
+        .crossword-cell-number {
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            z-index: 2;
+            color: #334155;
+            font: 700 8px/1 sans-serif;
+            pointer-events: none;
+        }
+        .crossword-cell-checked-correct {
+            background: #a7f3d0;
+        }
+        .crossword-cell-checked-incorrect {
+            background: #fecaca;
+        }
+        .dark .crossword-cell-checked-correct {
+            background: #6ee7b7;
+        }
+        .dark .crossword-cell-checked-incorrect {
+            background: #fca5a5;
+        }
+
+        .ttt-board {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            width: min(100%, 22rem);
+            margin-inline: auto;
+        }
+        .ttt-square {
+            display: grid;
+            aspect-ratio: 1;
+            place-items: center;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.5rem;
+            background: #fff;
+            font-size: clamp(2.5rem, 12vw, 4rem);
+            font-weight: 900;
+            line-height: 1;
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+        }
+        .dark .ttt-square {
+            border-color: #475569;
+            background: #0f172a;
+        }
+        .ttt-square:not(:disabled):hover {
+            transform: translateY(-2px);
+            border-color: #5c98f8;
+        }
+        .ttt-square-x {
+            color: #2563eb;
+        }
+        .ttt-square-o {
+            color: #e11d48;
+        }
+        .ttt-square-winning {
+            border-color: #10b981;
+            background: #d1fae5;
+        }
+        .dark .ttt-square-winning {
+            background: #064e3b;
+        }
+
+        .flappy-game-frame {
+            width: min(100%, 30rem);
+            aspect-ratio: 3 / 4;
+            margin-inline: auto;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #8eddf2;
+            touch-action: none;
+        }
+        .dark .flappy-game-frame {
+            border-color: #475569;
+        }
+        .flappy-game-frame canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            touch-action: none;
+        }
+        .mini-golf-game-frame {
+            width: min(100%, 48rem);
+            aspect-ratio: 3 / 2;
+            margin-inline: auto;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #73b950;
+            touch-action: none;
+        }
+        .dark .mini-golf-game-frame {
+            border-color: #475569;
+        }
+        .mini-golf-game-frame canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            touch-action: none;
+        }
+        .free-throw-game-frame {
+            width: min(100%, 40rem);
+            aspect-ratio: 4 / 3;
+            margin-inline: auto;
+            overflow: hidden;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #e8a65b;
+            touch-action: none;
+        }
+        .dark .free-throw-game-frame {
+            border-color: #475569;
+        }
+        .free-throw-game-frame canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            touch-action: none;
+        }
+
+        .chat-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-height: 16rem;
+            max-height: 28rem;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .chat-message {
+            align-self: flex-start;
+            max-width: min(90%, 34rem);
+            overflow-wrap: anywhere;
+            border-radius: 0.75rem;
+            background: #e2e8f0;
+            padding: 0.75rem 1rem;
+            color: #0f172a;
+        }
+        .chat-message-own {
+            align-self: flex-end;
+            background: #dbeafe;
+        }
+        .dark .chat-message {
+            background: #334155;
+            color: #f8fafc;
+        }
+        .dark .chat-message-own {
+            background: #164e63;
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 dark:bg-darkBg dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brandCyan selection:text-slate-900">
+
+    <!-- Top-Left Fixed Dark Mode Toggle -->
+    <div class="fixed top-3 left-3 z-50">
+        <label for="darkModeCheckbox" class="flex items-center gap-2 cursor-pointer bg-white/90 dark:bg-slate-800/90 backdrop-blur-md px-3.5 py-2 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:scale-105 transition-all text-xs sm:text-sm font-semibold select-none text-slate-700 dark:text-slate-200">
+            <i class="fa-solid fa-sun text-amber-500 dark:hidden"></i>
+            <i class="fa-solid fa-moon text-indigo-400 hidden dark:block"></i>
+            <input type="checkbox" id="darkModeCheckbox" class="hidden">
+            <span id="themeToggleLabel">Light Mode</span>
+        </label>
+    </div>
+
+    <!-- Sticky Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-brandBlue/90 dark:bg-slate-900/90 backdrop-blur-md shadow-md transition-colors duration-300">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            
+            <!-- Logo / Title -->
+            <a href="#home" onclick="navigateTo('home')" class="ml-28 sm:ml-32 md:ml-0 flex items-center gap-2 text-white font-extrabold text-xl tracking-wide group">
+                <span class="bg-black text-white px-2.5 py-1 rounded-md border-2 border-white text-lg group-hover:bg-brandCyan group-hover:text-black transition-colors">LD</span>
+                <span>Luke's Portfolio</span>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="navigateTo('home')" id="nav-home" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-house mr-1.5 text-xs"></i>Home
+                </button>
+                <button onclick="navigateTo('projects')" id="nav-projects" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-code mr-1.5 text-xs"></i>Skills & Projects
+                </button>
+                <button onclick="navigateTo('hobbies')" id="nav-hobbies" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-heart mr-1.5 text-xs"></i>Hobbies
+                </button>
+                <button onclick="navigateTo('sports-teams')" id="nav-sports-teams" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-trophy mr-1.5 text-xs"></i>Sports Teams
+                </button>
+                <button onclick="navigateTo('binary')" id="nav-binary" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-microchip mr-1.5 text-xs"></i>Binary Odometer
+                </button>
+                <button onclick="navigateTo('contact')" id="nav-contact" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-envelope mr-1.5 text-xs"></i>Contact
+                </button>
+                <details class="games-menu relative">
+                    <summary class="nav-btn flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-4 py-2 font-semibold text-white transition-colors hover:bg-slate-900/20 dark:hover:bg-slate-800/60">
+                        <i class="fa-solid fa-gamepad text-xs" aria-hidden="true"></i>Games
+                        <i class="fa-solid fa-chevron-down text-[10px]" aria-hidden="true"></i>
+                    </summary>
+                    <div class="absolute right-0 top-full z-50 mt-2 min-w-48 rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                        <button onclick="navigateTo('crossword')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-table-cells mr-2 text-xs"></i>Crossword
+                        </button>
+                        <button onclick="navigateTo('tic-tac-toe')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-gamepad mr-2 text-xs"></i>Tic-Tac-Toe
+                        </button>
+                        <button onclick="navigateTo('flappy-bird')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-dove mr-2 text-xs"></i>Flappy Flight
+                        </button>
+                        <button onclick="navigateTo('mini-golf')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-golf-ball-tee mr-2 text-xs"></i>Mini Golf
+                        </button>
+                        <button onclick="navigateTo('free-throw')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-basketball mr-2 text-xs"></i>76ers Free-Throw Challenge
+                        </button>
+                        <button onclick="navigateTo('rock-paper-scissors')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-hand-scissors mr-2 text-xs"></i>Rock Paper Scissors
+                        </button>
+                    </div>
+                </details>
+                <button onclick="navigateTo('chat')" id="nav-chat" class="nav-btn px-4 py-2 rounded-lg font-semibold text-white hover:bg-slate-900/20 dark:hover:bg-slate-800/60 transition-colors">
+                    <i class="fa-solid fa-comments mr-1.5 text-xs"></i>Chat
+                </button>
+            </nav>
+
+            <!-- Mobile Menu Toggle Button -->
+            <button id="mobileMenuBtn" class="md:hidden text-white text-2xl p-2 rounded-lg focus:outline-none">
+                <i class="fa-solid fa-bars" id="menuIcon"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Drawer Menu -->
+        <div id="mobileMenu" class="hidden md:hidden bg-blue-600 dark:bg-slate-900 border-t border-blue-400 dark:border-slate-800 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="navigateTo('home')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Home</button>
+            <button onclick="navigateTo('projects')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Skills & Projects</button>
+            <button onclick="navigateTo('hobbies')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Hobbies</button>
+            <button onclick="navigateTo('sports-teams')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Sports Teams</button>
+            <button onclick="navigateTo('binary')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Binary Odometer</button>
+            <button onclick="navigateTo('contact')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Contact</button>
+            <details class="games-menu rounded-lg text-white">
+                <summary class="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 font-semibold hover:bg-white/10">
+                    <span><i class="fa-solid fa-gamepad mr-1.5 text-xs" aria-hidden="true"></i>Games</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]" aria-hidden="true"></i>
+                </summary>
+                <div class="space-y-1 pl-3 pt-1">
+                    <button onclick="navigateTo('crossword')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-white hover:bg-white/10">Crossword</button>
+                    <button onclick="navigateTo('tic-tac-toe')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-white hover:bg-white/10">Tic-Tac-Toe</button>
+                    <button onclick="navigateTo('flappy-bird')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-white hover:bg-white/10">Flappy Flight</button>
+                    <button onclick="navigateTo('mini-golf')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-white hover:bg-white/10">Mini Golf</button>
+                    <button onclick="navigateTo('free-throw')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-white hover:bg-white/10">76ers Free-Throw Challenge</button>
+                    <button onclick="navigateTo('rock-paper-scissors')" class="w-full rounded-md px-3 py-2 text-left font-semibold text-white hover:bg-white/10">Rock Paper Scissors</button>
+                </div>
+            </details>
+            <button onclick="navigateTo('chat')" class="w-full text-left px-3 py-2 rounded-md font-semibold text-white hover:bg-white/10">Chat</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-5xl w-full mx-auto px-4 py-8">
+
+        <!-- PAGE 1: HOME -->
+        <section id="page-home" class="page-content space-y-8">
+            
+            <!-- Hero / Profile Card -->
+            <div class="glass-card rounded-2xl p-6 sm:p-10 shadow-xl text-center sm:text-left flex flex-col sm:flex-row items-center gap-8 border-t-4 border-t-black dark:border-t-brandCyan">
+                <div class="relative group">
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-tr from-brandBlue to-brandCyan p-1 shadow-lg">
+                        <div class="w-full h-full rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                            <i class="fa-solid fa-user-astronaut text-6xl text-brandBlue dark:text-brandCyan"></i>
+                        </div>
+                    </div>
+                    <span class="absolute bottom-1 right-1 bg-green-500 border-2 border-white dark:border-slate-800 w-5 h-5 rounded-full" title="Online"></span>
+                </div>
+
+                <div class="flex-1 space-y-3">
+                    <div class="inline-block px-3 py-1 rounded-full bg-blue-100 dark:bg-slate-800 text-brandBlue dark:text-brandCyan font-bold text-xs uppercase tracking-wider">
+                        Full-Stack Learner & Developer
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                        Hi, I'm <span class="text-brandBlue dark:text-brandCyan">Luke Dugan</span>
+                    </h1>
+                    <p class="text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
+                        Welcome to my digital portfolio! Explore my interactive binary odometer, skills, hobbies, and custom widgets.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-3 justify-center sm:justify-start">
+                        <button onclick="navigateTo('binary')" class="bg-brandBlue hover:bg-blue-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-md transition-all transform hover:-translate-y-0.5">
+                            Try Binary Odometer <i class="fa-solid fa-gauge-high ml-1"></i>
+                        </button>
+                        <button onclick="navigateTo('hobbies')" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold px-5 py-2.5 rounded-xl transition-all">
+                            Manage Hobbies <i class="fa-solid fa-heart ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Counter Widget -->
+            <div class="grid grid-cols-1 gap-6">
+                
+                <!-- Interactive Schmidt / Counter Widget -->
+                <div class="glass-card rounded-2xl p-6 shadow-md flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h2 class="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-gamepad text-brandBlue dark:text-brandCyan"></i> Counter Widget
+                            </h2>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brandCyan/20 text-slate-900 dark:text-brandCyan">
+                                Interactive
+                            </span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm">
+                            Click the button to increment the count or reset it back to zero!
+                        </p>
+                    </div>
+
+                    <!-- Counter Display -->
+                    <div class="text-center bg-slate-100 dark:bg-slate-800/80 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div id="count_label" class="text-5xl font-black text-brandNavy dark:text-brandCyan tracking-tight">0</div>
+                        <p class="text-xs text-slate-400 mt-1 uppercase font-semibold">Total Clicks</p>
+                    </div>
+
+                    <!-- Controls -->
+                    <div id="container" class="flex gap-2">
+                        <button id="counterBtn" class="button-thing flex-1 bg-brandCyan hover:bg-cyan-400 text-slate-900 font-extrabold py-3 px-4 rounded-xl shadow-sm hover:shadow transition-all transform active:scale-95 text-center">
+                            Don't Click Me!
+                        </button>
+                        <button id="resetBtn" class="bg-slate-200 dark:bg-slate-700 hover:bg-rose-500 hover:text-white text-slate-700 dark:text-slate-200 font-bold px-4 py-3 rounded-xl transition-all" title="Reset Counter">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SPORTS TEAMS -->
+        <section id="page-sports-teams" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">My Favorite Sports Teams</h2>
+                <p class="text-slate-600 dark:text-slate-300">Season records, team stats, and recent scores.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <article class="glass-card rounded-2xl p-5 shadow-md flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-basketball mr-2 text-blue-600" aria-hidden="true"></i>Philadelphia 76ers</h3>
+                            <span data-team-status="sixers" class="shrink-0 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" aria-live="polite">Loading</span>
+                        </div>
+                        <p data-team-standing="sixers" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current season</p>
+                        <p class="mt-3"><strong data-team-record="sixers" class="text-3xl font-black text-slate-900 dark:text-white">--</strong><span class="ml-2 text-xs uppercase text-slate-500">W-L</span></p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 border-y border-slate-200 py-3 text-center dark:border-slate-700">
+                        <div><strong data-team-stat="sixers:avgPoints" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">PPG</span></div>
+                        <div><strong data-team-stat="sixers:avgRebounds" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">RPG</span></div>
+                        <div><strong data-team-stat="sixers:avgAssists" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">APG</span></div>
+                        <div><strong data-team-stat="sixers:threePointPct" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">3P%</span></div>
+                    </div>
+                    <div>
+                        <h4 class="mb-2 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Recent scores</h4>
+                        <ul data-team-results="sixers" class="space-y-1.5 text-sm" aria-live="polite"><li class="text-slate-500">Loading scores...</li></ul>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
+                        <span data-team-updated="sixers" class="text-[10px] text-slate-500 dark:text-slate-400">Scores by ESPN</span>
+                        <div class="flex items-center gap-3"><a href="https://www.espn.com/nba/team/_/name/phi/philadelphia-76ers" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brandBlue dark:text-brandCyan">ESPN</a><button data-team-refresh="sixers" type="button" class="text-slate-500 hover:text-brandBlue dark:hover:text-brandCyan" title="Refresh 76ers stats" aria-label="Refresh 76ers stats"><i class="fa-solid fa-rotate-right"></i></button></div>
+                    </div>
+                </article>
+
+                <article class="glass-card rounded-2xl p-5 shadow-md flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-football mr-2 text-blue-700" aria-hidden="true"></i>New York Giants</h3>
+                            <span data-team-status="giants" class="shrink-0 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" aria-live="polite">Loading</span>
+                        </div>
+                        <p data-team-standing="giants" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current season</p>
+                        <p class="mt-3"><strong data-team-record="giants" class="text-3xl font-black text-slate-900 dark:text-white">--</strong><span class="ml-2 text-xs uppercase text-slate-500">W-L-T</span></p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 border-y border-slate-200 py-3 text-center dark:border-slate-700">
+                        <div><strong data-team-stat="giants:totalPointsPerGame" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">PPG</span></div>
+                        <div><strong data-team-stat="giants:passingYardsPerGame" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">PASS YPG</span></div>
+                        <div><strong data-team-stat="giants:rushingYardsPerGame" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">RUSH YPG</span></div>
+                        <div><strong data-team-stat="giants:totalTakeaways" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">TAKEAWAYS</span></div>
+                    </div>
+                    <div>
+                        <h4 class="mb-2 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Recent scores</h4>
+                        <ul data-team-results="giants" class="space-y-1.5 text-sm" aria-live="polite"><li class="text-slate-500">Loading scores...</li></ul>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
+                        <span data-team-updated="giants" class="text-[10px] text-slate-500 dark:text-slate-400">Scores by ESPN</span>
+                        <div class="flex items-center gap-3"><a href="https://www.espn.com/nfl/team/_/name/nyg/new-york-giants" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brandBlue dark:text-brandCyan">ESPN</a><button data-team-refresh="giants" type="button" class="text-slate-500 hover:text-brandBlue dark:hover:text-brandCyan" title="Refresh Giants stats" aria-label="Refresh Giants stats"><i class="fa-solid fa-rotate-right"></i></button></div>
+                    </div>
+                </article>
+
+                <article class="glass-card rounded-2xl p-5 shadow-md flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-baseball mr-2 text-orange-600" aria-hidden="true"></i>New York Mets</h3>
+                            <span data-team-status="mets" class="shrink-0 rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-900/50 dark:text-orange-300" aria-live="polite">Loading</span>
+                        </div>
+                        <p data-team-standing="mets" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current season</p>
+                        <p class="mt-3"><strong data-team-record="mets" class="text-3xl font-black text-slate-900 dark:text-white">--</strong><span class="ml-2 text-xs uppercase text-slate-500">W-L</span></p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 border-y border-slate-200 py-3 text-center dark:border-slate-700">
+                        <div><strong data-team-stat="mets:avg" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">AVG</span></div>
+                        <div><strong data-team-stat="mets:homeRuns" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">HR</span></div>
+                        <div><strong data-team-stat="mets:RBIs" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">RBI</span></div>
+                        <div><strong data-team-stat="mets:OPS" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">OPS</span></div>
+                    </div>
+                    <div>
+                        <h4 class="mb-2 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Recent scores</h4>
+                        <ul data-team-results="mets" class="space-y-1.5 text-sm" aria-live="polite"><li class="text-slate-500">Loading scores...</li></ul>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
+                        <span data-team-updated="mets" class="text-[10px] text-slate-500 dark:text-slate-400">Scores by ESPN</span>
+                        <div class="flex items-center gap-3"><a href="https://www.espn.com/mlb/team/_/name/nym/new-york-mets" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brandBlue dark:text-brandCyan">ESPN</a><button data-team-refresh="mets" type="button" class="text-slate-500 hover:text-brandBlue dark:hover:text-brandCyan" title="Refresh Mets stats" aria-label="Refresh Mets stats"><i class="fa-solid fa-rotate-right"></i></button></div>
+                    </div>
+                </article>
+
+                <article class="glass-card rounded-2xl p-5 shadow-md flex flex-col justify-between gap-4">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-hockey-puck mr-2 text-red-600" aria-hidden="true"></i>New Jersey Devils</h3>
+                            <span data-team-status="devils" class="shrink-0 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/50 dark:text-rose-300" aria-live="polite">Loading</span>
+                        </div>
+                        <p data-team-standing="devils" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Current season</p>
+                        <p class="mt-3"><strong data-team-record="devils" class="text-3xl font-black text-slate-900 dark:text-white">--</strong><span class="ml-2 text-xs uppercase text-slate-500">W-L-OT</span></p>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 border-y border-slate-200 py-3 text-center dark:border-slate-700">
+                        <div><strong data-team-stat="devils:goals" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">GOALS</span></div>
+                        <div><strong data-team-stat="devils:assists" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">ASSISTS</span></div>
+                        <div><strong data-team-stat="devils:points" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">POINTS</span></div>
+                        <div><strong data-team-stat="devils:shootingPct" class="block text-sm text-slate-900 dark:text-white">--</strong><span class="text-[10px] uppercase text-slate-500">SHOOT %</span></div>
+                    </div>
+                    <div>
+                        <h4 class="mb-2 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Recent scores</h4>
+                        <ul data-team-results="devils" class="space-y-1.5 text-sm" aria-live="polite"><li class="text-slate-500">Loading scores...</li></ul>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
+                        <span data-team-updated="devils" class="text-[10px] text-slate-500 dark:text-slate-400">Scores by ESPN</span>
+                        <div class="flex items-center gap-3"><a href="https://www.espn.com/nhl/team/_/name/nj/new-jersey-devils" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-brandBlue dark:text-brandCyan">ESPN</a><button data-team-refresh="devils" type="button" class="text-slate-500 hover:text-brandBlue dark:hover:text-brandCyan" title="Refresh Devils stats" aria-label="Refresh Devils stats"><i class="fa-solid fa-rotate-right"></i></button></div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- PAGE 2: SKILLS & PROJECTS -->
+        <section id="page-projects" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Technical Skills & Projects</h2>
+                <p class="text-slate-600 dark:text-slate-300">Languages and web tools I develop with.</p>
+            </div>
+
+            <!-- Skills Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-card p-5 rounded-xl flex items-center gap-4 border-l-4 border-l-red-500">
+                    <i class="fa-brands fa-java text-4xl text-red-500"></i>
+                    <div>
+                        <h3 class="font-bold text-lg">Java</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">OOP & Data Structures</p>
+                    </div>
+                </div>
+                <div class="glass-card p-5 rounded-xl flex items-center gap-4 border-l-4 border-l-yellow-500">
+                    <i class="fa-brands fa-python text-4xl text-yellow-500"></i>
+                    <div>
+                        <h3 class="font-bold text-lg">Python</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Scripting & Logic</p>
+                    </div>
+                </div>
+                <div class="glass-card p-5 rounded-xl flex items-center gap-4 border-l-4 border-l-orange-500">
+                    <i class="fa-brands fa-html5 text-4xl text-orange-500"></i>
+                    <div>
+                        <h3 class="font-bold text-lg">HTML5 & CSS3</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Web Design & JS</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Projects Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card rounded-2xl p-6 shadow-md flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-xl bg-brandBlue/20 text-brandBlue dark:text-brandCyan flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-gauge-high"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">8-Bit Binary Odometer</h3>
+                        <p class="text-slate-600 dark:text-slate-300 text-sm">
+                            An interactive bit-wise counter visualizing binary numbers (128 to 1) with real-time ASCII and decimal translation.
+                        </p>
+                    </div>
+                    <div class="pt-6">
+                        <button onclick="navigateTo('binary')" class="w-full bg-brandBlue hover:bg-blue-600 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">
+                            Launch Odometer <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-6 shadow-md flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-slate-800 text-cyan-600 dark:text-brandCyan flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Dynamic Hobby Tracker</h3>
+                        <p class="text-slate-600 dark:text-slate-300 text-sm">
+                            An interactive web tool letting visitors insert and delete hobbies on the fly with live list updates.
+                        </p>
+                    </div>
+                    <div class="pt-6">
+                        <button onclick="navigateTo('hobbies')" class="w-full bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">
+                            Try Hobby List <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 3: HOBBIES -->
+        <section id="page-hobbies" class="page-content space-y-6 hidden">
+            
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">My Favorite Hobbies</h2>
+                        <p class="text-slate-600 dark:text-slate-300 text-sm">Type a hobby below and click "Add Hobby" to update the list!</p>
+                    </div>
+                    <span id="hobbyCountBadge" class="self-start sm:self-auto px-3 py-1 bg-brandBlue/20 text-brandBlue dark:text-brandCyan font-bold text-xs rounded-full">
+                        4 Items
+                    </span>
+                </div>
+
+                <!-- Input Field & Add Button Container -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-pen-to-square absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input 
+                            type="text" 
+                            id="hobbyInput" 
+                            placeholder="Type a hobby here..." 
+                            autocomplete="off"
+                            class="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 text-slate-900 dark:text-white focus:outline-none focus:border-brandBlue dark:focus:border-brandCyan transition-colors shadow-sm"
+                        />
+                    </div>
+                    <button id="addHobbyBtn" class="bg-brandBlue hover:bg-blue-600 dark:bg-brandCyan dark:hover:bg-cyan-400 text-white dark:text-slate-900 font-extrabold px-6 py-3 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Hobby</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Hobby List -->
+            <div class="glass-card rounded-2xl p-6 shadow-md">
+                <ul id="hobbyList" class="space-y-3">
+                    <li class="hobby-item flex items-center justify-between p-4 rounded-xl bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all hover:scale-[1.01]">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-3">
+                            <i class="fa-solid fa-person-running text-brandBlue dark:text-brandCyan"></i> Running
+                        </span>
+                        <button onclick="removeHobby(this)" class="text-slate-400 hover:text-red-500 p-2 rounded-lg transition-colors" title="Delete Hobby">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </li>
+                    <li class="hobby-item flex items-center justify-between p-4 rounded-xl bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all hover:scale-[1.01]">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-3">
+                            <i class="fa-solid fa-golf-ball-tee text-emerald-500"></i> Golfing
+                        </span>
+                        <button onclick="removeHobby(this)" class="text-slate-400 hover:text-red-500 p-2 rounded-lg transition-colors" title="Delete Hobby">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </li>
+                    <li class="hobby-item flex items-center justify-between p-4 rounded-xl bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all hover:scale-[1.01]">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-3">
+                            <i class="fa-solid fa-users text-amber-500"></i> Seeing Friends
+                        </span>
+                        <button onclick="removeHobby(this)" class="text-slate-400 hover:text-red-500 p-2 rounded-lg transition-colors" title="Delete Hobby">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </li>
+                    <li class="hobby-item flex items-center justify-between p-4 rounded-xl bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all hover:scale-[1.01]">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-3">
+                            <i class="fa-solid fa-gamepad text-indigo-500"></i> Playing video games
+                        </span>
+                        <button onclick="removeHobby(this)" class="text-slate-400 hover:text-red-500 p-2 rounded-lg transition-colors" title="Delete Hobby">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+        </section>
+
+        <!-- PAGE 4: BINARY ODOMETER TOOL -->
+        <section id="page-binary" class="page-content space-y-6 hidden">
+            
+            <!-- Header Header Card -->
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-xl bg-brandCyan/20 text-brandNavy dark:text-brandCyan flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-gauge-high"></i>
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Interactive 8-Bit Binary Odometer</h2>
+                </div>
+                <p class="text-slate-600 dark:text-slate-300 text-sm">
+                    Tick up or down like a mechanical odometer wheel, toggle individual bit switches, or play the auto-increment loop!
+                </p>
+            </div>
+
+            <!-- MAIN ODOMETER DISPLAY CARD -->
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-xl space-y-6 border-2 border-slate-300 dark:border-slate-700">
+                
+                <!-- Odometer Display Dashboard -->
+                <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-inner space-y-6">
+                    
+                    <!-- Values Header Bar -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center border-b border-slate-800 pb-4">
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Decimal Value</span>
+                            <span id="odoDecimalDisplay" class="text-3xl font-black text-brandCyan">0</span>
+                        </div>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Binary String</span>
+                            <span id="odoBinaryDisplay" class="text-2xl font-mono font-bold text-emerald-400">00000000</span>
+                        </div>
+                        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">ASCII Character</span>
+                            <span id="odoAsciiDisplay" class="text-3xl font-bold text-amber-400">[NUL]</span>
+                        </div>
+                    </div>
+
+                    <!-- 8 PHYSICAL ODOMETER BIT WHEELS / SWITCHES -->
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="text-xs font-bold uppercase text-slate-400">8-Bit Register (MSB &rarr; LSB)</span>
+                            <span class="text-xs text-brandCyan">Click bit card to toggle 0 / 1</span>
+                        </div>
+                        
+                        <div id="odometerGrid" class="grid grid-cols-8 gap-1.5 sm:gap-3 text-center">
+                            <!-- 8 Bits Generated by JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Odometer Control Buttons -->
+                <div class="flex flex-wrap gap-3 items-center justify-between pt-2">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="stepOdometer(1)" class="bg-brandBlue hover:bg-blue-600 text-white font-extrabold px-5 py-3 rounded-xl shadow transition-all active:scale-95 flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Increment (+1)
+                        </button>
+                        <button onclick="stepOdometer(-1)" class="bg-slate-700 hover:bg-slate-800 text-white font-extrabold px-5 py-3 rounded-xl shadow transition-all active:scale-95 flex items-center gap-2">
+                            <i class="fa-solid fa-minus"></i> Decrement (-1)
+                        </button>
+                        <button onclick="resetOdometer()" class="bg-rose-500/20 hover:bg-rose-500 text-rose-600 hover:text-white font-bold px-4 py-3 rounded-xl border border-rose-400/40 transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i> Reset (0)
+                        </button>
+                    </div>
+
+                    <!-- Auto-Increment / Tick Toggle -->
+                    <div class="flex items-center gap-2 bg-slate-200 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-300 dark:border-slate-700">
+                        <button id="autoPlayBtn" onclick="toggleAutoPlay()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-extrabold px-4 py-2 rounded-lg text-sm shadow transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-play" id="autoPlayIcon"></i>
+                            <span id="autoPlayText">Auto Tick</span>
+                        </button>
+                        
+                        <select id="speedSelect" onchange="changeAutoSpeed(this.value)" class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-bold py-2 px-2 rounded-lg border border-slate-300 dark:border-slate-700 focus:outline-none">
+                            <option value="500">1x Speed</option>
+                            <option value="250">2x Speed</option>
+                            <option value="100">5x Speed</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SECONDARY PLAYGROUND: TEXT TO BINARY / BINARY TO TEXT -->
+            <div class="glass-card rounded-2xl p-6 shadow-md space-y-4">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-right-left text-brandBlue dark:text-brandCyan"></i> Quick Converter Playground
+                </h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="textPlayground" class="block text-xs font-bold uppercase text-slate-500 mb-1">Enter Text:</label>
+                        <input 
+                            type="text" 
+                            id="textPlayground" 
+                            value="Luke" 
+                            oninput="convertTextToBinary(this.value)"
+                            class="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-mono text-sm focus:outline-none focus:border-brandBlue"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Binary Output:</label>
+                        <div id="binaryPlaygroundResult" class="w-full p-3 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs break-all min-h-[46px] flex items-center">
+                            01001100 01110101 01101011 01100101
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- PAGE 5: CONTACT -->
+        <section id="page-contact" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Contact Me</h2>
+                <p class="text-slate-600 dark:text-slate-300">Choose the best way to get in touch.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <a href="mailto:ldugan28@pascack.org" class="glass-card rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-brandBlue hover:border-l-brandCyan transition-colors">
+                    <i class="fa-solid fa-envelope text-2xl text-brandBlue dark:text-brandCyan" aria-hidden="true"></i>
+                    <span class="min-w-0">
+                        <span class="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Email</span>
+                        <span class="break-all font-semibold text-slate-900 dark:text-white">ldugan28@pascack.org</span>
+                    </span>
+                </a>
+                <a href="mailto:luke.kooter@gmail.com" class="glass-card rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-brandBlue hover:border-l-brandCyan transition-colors">
+                    <i class="fa-solid fa-envelope text-2xl text-brandBlue dark:text-brandCyan" aria-hidden="true"></i>
+                    <span class="min-w-0">
+                        <span class="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Email</span>
+                        <span class="break-all font-semibold text-slate-900 dark:text-white">luke.kooter@gmail.com</span>
+                    </span>
+                </a>
+                <a href="tel:+12013123017" class="glass-card rounded-xl p-5 flex items-center gap-4 border-l-4 border-l-emerald-500 hover:border-l-brandCyan transition-colors">
+                    <i class="fa-solid fa-phone text-2xl text-emerald-600 dark:text-emerald-400" aria-hidden="true"></i>
+                    <span>
+                        <span class="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Phone</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">201-312-3017</span>
+                    </span>
+                </a>
+            </div>
+        </section>
+
+        <!-- PAGE 6: CROSSWORD -->
+        <section id="page-crossword" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Portfolio Crossword</h2>
+                        <p class="text-slate-600 dark:text-slate-300">20 clues about basketball, hobbies, and web development.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="crosswordProgress" class="text-sm font-bold text-slate-700 dark:text-slate-200">0 / 20 clues solved</span>
+                        <button id="crosswordCheckBtn" type="button" class="bg-brandBlue hover:bg-blue-600 text-white font-bold px-4 py-2 rounded-lg transition-colors" title="Check answers">
+                            <i class="fa-solid fa-check mr-1" aria-hidden="true"></i>Check
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Direction</span>
+                    <div class="inline-flex rounded-lg border border-slate-300 dark:border-slate-700 p-1" role="group" aria-label="Crossword direction">
+                        <button type="button" data-crossword-direction="A" aria-pressed="true" class="crossword-direction-btn rounded-md bg-brandBlue px-3 py-1.5 text-sm font-bold text-white">Across</button>
+                        <button type="button" data-crossword-direction="D" aria-pressed="false" class="crossword-direction-btn rounded-md px-3 py-1.5 text-sm font-bold text-slate-600 dark:text-slate-300">Down</button>
+                    </div>
+                    <button id="crosswordClearBtn" type="button" class="ml-auto text-slate-500 hover:text-rose-600 dark:hover:text-rose-400" title="Clear all answers" aria-label="Clear all answers">
+                        <i class="fa-solid fa-rotate-left text-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <p id="crosswordMessage" class="mt-3 min-h-5 text-sm text-slate-600 dark:text-slate-400" aria-live="polite">Select a square or clue to begin. Use arrow keys to move and Space to switch direction.</p>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-md space-y-6">
+                <div class="overflow-x-auto pb-2" aria-label="Scrollable crossword grid">
+                    <div id="crosswordGrid" class="crossword-grid" role="group" aria-label="Crossword puzzle grid"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-200 dark:border-slate-700 pt-5">
+                    <section aria-labelledby="crosswordAcrossHeading">
+                        <h3 id="crosswordAcrossHeading" class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Across</h3>
+                        <ol id="crosswordAcrossClues" class="space-y-1"></ol>
+                    </section>
+                    <section aria-labelledby="crosswordDownHeading">
+                        <h3 id="crosswordDownHeading" class="mb-3 text-lg font-bold text-slate-900 dark:text-white">Down</h3>
+                        <ol id="crosswordDownClues" class="space-y-1"></ol>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 7: TIC-TAC-TOE -->
+        <section id="page-tic-tac-toe" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">Tic-Tac-Toe</h2>
+                        <p class="text-slate-600 dark:text-slate-300">Play against a perfect-play AI. It will never lose.</p>
+                    </div>
+                    <button id="tttNewGame" type="button" class="self-start sm:self-auto bg-brandBlue hover:bg-blue-600 text-white font-bold px-4 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-rotate-right mr-1" aria-hidden="true"></i>New game
+                    </button>
+                </div>
+
+                <div class="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Choose your mark">
+                        <span class="mr-1 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Play as</span>
+                        <button type="button" data-ttt-mark="X" aria-pressed="true" class="ttt-mark-btn rounded-md bg-brandBlue px-4 py-2 font-bold text-white">X</button>
+                        <button type="button" data-ttt-mark="O" aria-pressed="false" class="ttt-mark-btn rounded-md border border-slate-300 px-4 py-2 font-bold text-slate-700 dark:border-slate-600 dark:text-slate-200">O</button>
+                    </div>
+                    <div class="flex gap-5 text-sm font-semibold text-slate-600 dark:text-slate-300" aria-label="Session score">
+                        <span>Wins <strong id="tttWins" class="text-emerald-600 dark:text-emerald-400">0</strong></span>
+                        <span>Draws <strong id="tttDraws" class="text-slate-900 dark:text-white">0</strong></span>
+                        <span>Losses <strong id="tttLosses" class="text-rose-600 dark:text-rose-400">0</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-md">
+                <p id="tttStatus" class="mb-5 text-center text-lg font-bold text-slate-900 dark:text-white" aria-live="polite">Loading AI...</p>
+                <div id="tttBoard" class="ttt-board" role="group" aria-label="Tic-tac-toe board"></div>
+                <p class="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">AI strategy by <a href="https://www.npmjs.com/package/@gamod/tic-tac-toe" target="_blank" rel="noopener noreferrer" class="font-semibold text-brandBlue dark:text-brandCyan hover:underline">@gamod/tic-tac-toe</a></p>
+            </div>
+        </section>
+
+        <!-- PAGE 8: ROCK PAPER SCISSORS -->
+        <section id="page-rock-paper-scissors" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Rock Paper Scissors</h2>
+                        <p class="mt-1 text-slate-600 dark:text-slate-300">Choose your move. The computer picks at random.</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-sm font-semibold text-slate-600 dark:text-slate-300" aria-label="Match score">
+                        <span>Wins <strong id="rpsWins" class="text-emerald-600 dark:text-emerald-400">0</strong></span>
+                        <span>Draws <strong id="rpsDraws" class="text-slate-900 dark:text-white">0</strong></span>
+                        <span>Losses <strong id="rpsLosses" class="text-rose-600 dark:text-rose-400">0</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-md space-y-6">
+                <p id="rpsStatus" class="text-center text-lg font-bold text-slate-900 dark:text-white" aria-live="polite">Choose your move to start.</p>
+
+                <div class="grid grid-cols-2 gap-3 sm:gap-6 max-w-xl mx-auto text-center">
+                    <div class="rounded-xl bg-slate-100 dark:bg-slate-800 p-4 sm:p-6">
+                        <p class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">You</p>
+                        <p id="rpsPlayerMove" class="mt-2 text-2xl sm:text-3xl font-black text-brandBlue dark:text-brandCyan">?</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-100 dark:bg-slate-800 p-4 sm:p-6">
+                        <p class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Computer</p>
+                        <p id="rpsComputerMove" class="mt-2 text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">?</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-3" role="group" aria-label="Choose rock, paper, or scissors">
+                    <button type="button" onclick="playRockPaperScissors('rock')" class="flex min-w-24 flex-col items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-4 font-bold text-slate-800 transition-colors hover:border-brandBlue hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-brandCyan dark:hover:bg-slate-800">
+                        <i class="fa-solid fa-hand-back-fist text-2xl text-brandBlue dark:text-brandCyan" aria-hidden="true"></i>Rock
+                    </button>
+                    <button type="button" onclick="playRockPaperScissors('paper')" class="flex min-w-24 flex-col items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-4 font-bold text-slate-800 transition-colors hover:border-brandBlue hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-brandCyan dark:hover:bg-slate-800">
+                        <i class="fa-solid fa-hand text-2xl text-brandBlue dark:text-brandCyan" aria-hidden="true"></i>Paper
+                    </button>
+                    <button type="button" onclick="playRockPaperScissors('scissors')" class="flex min-w-24 flex-col items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-4 font-bold text-slate-800 transition-colors hover:border-brandBlue hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:border-brandCyan dark:hover:bg-slate-800">
+                        <i class="fa-solid fa-hand-scissors text-2xl text-brandBlue dark:text-brandCyan" aria-hidden="true"></i>Scissors
+                    </button>
+                </div>
+
+                <div class="flex justify-center border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <button type="button" onclick="resetRockPaperScissors()" class="text-slate-500 transition-colors hover:text-rose-600 dark:hover:text-rose-400" title="Reset match score" aria-label="Reset match score">
+                        <i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Reset score
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 9: FLAPPY FLIGHT -->
+        <section id="page-flappy-bird" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Flappy Flight</h2>
+                        <p class="mt-1 text-slate-600 dark:text-slate-300">Flap through the pipes. Press Space, click, or tap to fly.</p>
+                    </div>
+                    <div class="flex items-center gap-5 text-sm font-semibold text-slate-600 dark:text-slate-300" aria-label="Flight score">
+                        <span>Score <strong id="flappyScore" class="text-slate-900 dark:text-white">0</strong></span>
+                        <span>High score <strong id="flappyBestScore" class="text-brandBlue dark:text-brandCyan">0</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-md space-y-4">
+                <p id="flappyStatus" class="text-center text-sm font-semibold text-slate-600 dark:text-slate-300" aria-live="polite">Loading game...</p>
+                <div id="flappyGameFrame" class="flappy-game-frame" role="application" aria-label="Flappy Flight game. Press Space, click, or tap to flap."></div>
+                <div class="flex justify-center">
+                    <button id="flappyRestartButton" type="button" onclick="startFlappyBirdGame()" class="rounded-lg bg-brandBlue px-5 py-2.5 font-bold text-white transition-colors hover:bg-blue-600">
+                        <i class="fa-solid fa-play mr-1" aria-hidden="true"></i>Start game
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 10: MINI GOLF -->
+        <section id="page-mini-golf" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Mini Golf</h2>
+                        <p class="mt-1 text-slate-600 dark:text-slate-300">Drag back from the ball to aim and set power, then release to putt.</p>
+                    </div>
+                    <div class="flex items-center gap-5 text-sm font-semibold text-slate-600 dark:text-slate-300" aria-label="Mini golf score">
+                        <span>Strokes <strong id="miniGolfStrokes" class="text-slate-900 dark:text-white">0</strong></span>
+                        <span>Par <strong class="text-slate-900 dark:text-white">3</strong></span>
+                        <span>Best <strong id="miniGolfBest" class="text-brandBlue dark:text-brandCyan">--</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-md space-y-4">
+                <p id="miniGolfStatus" class="text-center text-sm font-semibold text-slate-600 dark:text-slate-300" aria-live="polite">Loading course...</p>
+                <div id="miniGolfGameFrame" class="mini-golf-game-frame" role="application" aria-label="Mini golf course. Drag backward from the ball and release to putt."></div>
+                <div class="flex justify-center">
+                    <button id="miniGolfRestartButton" type="button" onclick="resetMiniGolfGame()" class="rounded-lg bg-brandBlue px-5 py-2.5 font-bold text-white transition-colors hover:bg-blue-600">
+                        <i class="fa-solid fa-rotate-right mr-1" aria-hidden="true"></i>Restart hole
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 11: 76ERS FREE-THROW CHALLENGE -->
+        <section id="page-free-throw" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">76ers Free-Throw Challenge</h2>
+                        <p class="mt-1 text-slate-600 dark:text-slate-300">Drag back from the ball and release to shoot. How long can you keep your streak alive?</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-600 dark:text-slate-300" aria-label="Shooting stats">
+                        <span>Streak <strong id="freeThrowStreak" class="text-emerald-600 dark:text-emerald-400">0</strong></span>
+                        <span>Makes <strong id="freeThrowMakes" class="text-slate-900 dark:text-white">0</strong></span>
+                        <span>Best <strong id="freeThrowBest" class="text-brandBlue dark:text-brandCyan">0</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-md space-y-4">
+                <p id="freeThrowStatus" class="text-center text-sm font-semibold text-slate-600 dark:text-slate-300" aria-live="polite">Drag back from the ball to aim and shoot.</p>
+                <div id="freeThrowGameFrame" class="free-throw-game-frame" role="application" aria-label="Basketball free throw game. Drag back from the ball and release to shoot."></div>
+                <div class="flex justify-center">
+                    <button id="freeThrowResetButton" type="button" onclick="resetFreeThrowChallenge()" class="rounded-lg bg-brandBlue px-5 py-2.5 font-bold text-white transition-colors hover:bg-blue-600">
+                        <i class="fa-solid fa-rotate-right mr-1" aria-hidden="true"></i>New round
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 12: COMMUNITY CHAT -->
+        <section id="page-chat" class="page-content space-y-6 hidden">
+            <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Community Chat</h2>
+                        <p class="mt-1 text-slate-600 dark:text-slate-300">Say hello to other visitors in the shared room.</p>
+                    </div>
+                    <span id="chatConnectionStatus" class="text-sm font-semibold text-slate-500 dark:text-slate-400" aria-live="polite">Connecting...</span>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-md">
+                <ol id="chatMessages" class="chat-feed" role="log" aria-live="polite" aria-relevant="additions text">
+                    <li id="chatEmptyState" class="m-auto text-center text-sm text-slate-500 dark:text-slate-400">Messages will appear here when the chat is connected.</li>
+                </ol>
+
+                <form id="chatForm" class="mt-4 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="w-full sm:max-w-56">
+                            <label for="chatDisplayName" class="mb-1 block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Display name</label>
+                            <input id="chatDisplayName" type="text" maxlength="24" autocomplete="nickname" placeholder="Guest name" required disabled class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                        </div>
+                        <div class="flex-1">
+                            <label for="chatMessageInput" class="mb-1 block text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Message</label>
+                            <textarea id="chatMessageInput" rows="2" maxlength="500" placeholder="Write a message..." required disabled class="w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+                        </div>
+                        <button id="chatSendButton" type="submit" disabled class="shrink-0 rounded-lg bg-brandBlue px-5 py-2.5 font-bold text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50">
+                            <i class="fa-solid fa-paper-plane mr-1" aria-hidden="true"></i>Send
+                        </button>
+                    </div>
+                    <div class="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                        <p>Messages are public to everyone in this room. Don’t share private information.</p>
+                        <span id="chatCharacterCount" aria-live="polite">0 / 500</span>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-300 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md py-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+        <p>&copy; 2026 Luke Dugan. All rights reserved.</p>
+        <p class="text-slate-400 dark:text-slate-600">Built with HTML5, JavaScript, and Tailwind CSS.</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-4 z-50">
+        <i id="toastIcon" class="fa-solid fa-check-circle text-brandCyan"></i>
+        <span id="toastMessage" class="text-sm font-semibold">Notification</span>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Odometer State
+        let odometerValue = 0; // Integer 0 to 255
+        let autoPlayInterval = null;
+        let autoSpeed = 500;
+        const bitWeights = [128, 64, 32, 16, 8, 4, 2, 1];
+        const hobbyStorageKey = "portfolioHobbies";
+        const crosswordRows = 19;
+        const crosswordColumns = 21;
+        const crosswordEntries = [
+            { number: 1, direction: "A", answer: "PORTFOLIO", row: 0, column: 10, clue: "A collection showcasing projects and work." },
+            { number: 2, direction: "D", answer: "REBOUND", row: 0, column: 12, clue: "A ball recovered after a missed shot." },
+            { number: 3, direction: "A", answer: "HOBBY", row: 2, column: 9, clue: "A favorite pastime or leisure activity." },
+            { number: 4, direction: "D", answer: "GOLFING", row: 2, column: 15, clue: "A hobby played on a course with clubs." },
+            { number: 4, direction: "A", answer: "GAMING", row: 2, column: 15, clue: "Playing video games as a pastime." },
+            { number: 5, direction: "D", answer: "SIXERS", row: 3, column: 7, clue: "Philadelphia's NBA team, by nickname." },
+            { number: 6, direction: "A", answer: "PUZZLE", row: 4, column: 11, clue: "A game that challenges you to solve a problem." },
+            { number: 7, direction: "D", answer: "COURT", row: 6, column: 10, clue: "The marked playing area for basketball." },
+            { number: 8, direction: "A", answer: "BINARY", row: 6, column: 14, clue: "A number system using only 0 and 1." },
+            { number: 9, direction: "D", answer: "ASSIST", row: 6, column: 17, clue: "A pass that directly sets up a basket." },
+            { number: 10, direction: "A", answer: "HOOPS", row: 8, column: 3, clue: "Slang for basketball or the game itself." },
+            { number: 11, direction: "D", answer: "PLAYER", row: 8, column: 6, clue: "One person competing in a sport or game." },
+            { number: 12, direction: "A", answer: "RUNNING", row: 8, column: 9, clue: "A cardio hobby done on foot." },
+            { number: 13, direction: "A", answer: "BASKETBALL", row: 10, column: 5, clue: "The 76ers' sport, played on a court." },
+            { number: 14, direction: "A", answer: "JAVASCRIPT", row: 13, column: 0, clue: "The programming language that makes web pages interactive." },
+            { number: 15, direction: "D", answer: "SCORE", row: 13, column: 4, clue: "The points earned in a game." },
+            { number: 16, direction: "D", answer: "POINTS", row: 13, column: 8, clue: "Units earned by scoring in a game." },
+            { number: 17, direction: "A", answer: "FRIENDS", row: 15, column: 6, clue: "People you enjoy spending time with." },
+            { number: 18, direction: "A", answer: "CLUES", row: 17, column: 1, clue: "Hints used to solve a crossword." },
+            { number: 19, direction: "A", answer: "TEAM", row: 17, column: 8, clue: "A group of players competing together." }
+        ];
+        let crosswordDirection = "A";
+        let crosswordActiveEntry = null;
+        let crosswordCurrentCell = null;
+        const favoriteSportsTeams = [
+            {
+                id: "sixers",
+                path: "basketball/nba/teams/phi",
+                abbreviation: "PHI",
+                stats: [
+                    { key: "avgPoints", suffix: "" },
+                    { key: "avgRebounds", suffix: "" },
+                    { key: "avgAssists", suffix: "" },
+                    { key: "threePointPct", suffix: "%" }
+                ]
+            },
+            {
+                id: "giants",
+                path: "football/nfl/teams/nyg",
+                abbreviation: "NYG",
+                stats: [
+                    { key: "totalPointsPerGame", suffix: "" },
+                    { key: "passingYardsPerGame", suffix: "" },
+                    { key: "rushingYardsPerGame", suffix: "" },
+                    { key: "totalTakeaways", suffix: "" }
+                ]
+            },
+            {
+                id: "crimson-tide",
+                path: "football/college-football/teams/333",
+                abbreviation: "ALA",
+                stats: [
+                    { key: "totalPointsPerGame", suffix: "" },
+                    { key: "passingYardsPerGame", suffix: "" },
+                    { key: "rushingYardsPerGame", suffix: "" },
+                    { key: "totalTakeaways", suffix: "" }
+                ]
+            },
+            {
+                id: "gators",
+                path: "football/college-football/teams/57",
+                abbreviation: "FLA",
+                stats: [
+                    { key: "totalPointsPerGame", suffix: "" },
+                    { key: "passingYardsPerGame", suffix: "" },
+                    { key: "rushingYardsPerGame", suffix: "" },
+                    { key: "totalTakeaways", suffix: "" }
+                ]
+            }
+        ];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // --- Dark Mode Logic ---
+            const darkModeCheckbox = document.getElementById("darkModeCheckbox");
+            const themeLabel = document.getElementById("themeToggleLabel");
+
+            if (localStorage.getItem("theme") === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+                document.documentElement.classList.add("dark");
+                if (darkModeCheckbox) darkModeCheckbox.checked = true;
+                if (themeLabel) themeLabel.textContent = "Dark Mode";
+            } else {
+                document.documentElement.classList.remove("dark");
+                if (darkModeCheckbox) darkModeCheckbox.checked = false;
+                if (themeLabel) themeLabel.textContent = "Light Mode";
+            }
+
+            if (darkModeCheckbox) {
+                darkModeCheckbox.addEventListener("change", () => {
+                    if (darkModeCheckbox.checked) {
+                        document.documentElement.classList.add("dark");
+                        localStorage.setItem("theme", "dark");
+                        if (themeLabel) themeLabel.textContent = "Dark Mode";
+                        showToast("Switched to Dark Mode");
+                    } else {
+                        document.documentElement.classList.remove("dark");
+                        localStorage.setItem("theme", "light");
+                        if (themeLabel) themeLabel.textContent = "Light Mode";
+                        showToast("Switched to Light Mode");
+                    }
+                });
+            }
+
+            // Mobile Menu Toggle
+            const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+            const mobileMenu = document.getElementById("mobileMenu");
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener("click", () => {
+                    mobileMenu.classList.toggle("hidden");
+                });
+            }
+
+            // Counter Widget
+            const counterBtn = document.getElementById("counterBtn");
+            const resetBtn = document.getElementById("resetBtn");
+            const countLabel = document.getElementById("count_label");
+            let count = 0;
+
+            if (counterBtn && countLabel) {
+                counterBtn.addEventListener("click", () => {
+                    count++;
+                    countLabel.textContent = count;
+                    countLabel.classList.add("scale-110");
+                    setTimeout(() => countLabel.classList.remove("scale-110"), 150);
+                });
+            }
+
+            if (resetBtn && countLabel) {
+                resetBtn.addEventListener("click", () => {
+                    count = 0;
+                    countLabel.textContent = count;
+                    showToast("Counter reset to 0");
+                });
+            }
+
+            // Dynamic Hobby Listeners
+            const hobbyInput = document.getElementById("hobbyInput");
+            const addHobbyBtn = document.getElementById("addHobbyBtn");
+
+            loadHobbies();
+            if (addHobbyBtn) addHobbyBtn.addEventListener("click", addHobby);
+            if (hobbyInput) {
+                hobbyInput.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") addHobby();
+                });
+            }
+
+            // Initialize Odometer Display
+            renderOdometerGrid();
+            updateOdometerDisplay();
+            convertTextToBinary("Luke");
+
+            document.querySelectorAll("[data-team-refresh]").forEach(button => {
+                const team = favoriteSportsTeams.find(item => item.id === button.dataset.teamRefresh);
+                if (team) button.addEventListener("click", () => loadSportsTeamStats(team));
+            });
+            loadAllSportsStats();
+            initializeCrossword();
+        });
+
+        function initializeCrossword() {
+            const grid = document.getElementById("crosswordGrid");
+            const acrossClues = document.getElementById("crosswordAcrossClues");
+            const downClues = document.getElementById("crosswordDownClues");
+            if (!grid || !acrossClues || !downClues) return;
+
+            const cells = new Map();
+            crosswordEntries.forEach(entry => {
+                const rowStep = entry.direction === "D" ? 1 : 0;
+                const columnStep = entry.direction === "A" ? 1 : 0;
+                for (let index = 0; index < entry.answer.length; index++) {
+                    const key = `${entry.row + rowStep * index}:${entry.column + columnStep * index}`;
+                    const cell = cells.get(key) || { letter: entry.answer[index], entries: [] };
+                    if (cell.letter !== entry.answer[index]) return;
+                    cell.entries.push(entry);
+                    cells.set(key, cell);
+                }
+            });
+
+            const clueNumbers = new Map();
+            crosswordEntries.forEach(entry => {
+                clueNumbers.set(`${entry.row}:${entry.column}`, entry.number);
+                const clueList = entry.direction === "A" ? acrossClues : downClues;
+                const clueItem = document.createElement("li");
+                const clueButton = document.createElement("button");
+                clueButton.type = "button";
+                clueButton.dataset.crosswordNumber = entry.number;
+                clueButton.dataset.crosswordDirection = entry.direction;
+                clueButton.className = "w-full rounded-md px-2 py-1 text-left text-sm text-slate-700 hover:bg-blue-100 dark:text-slate-300 dark:hover:bg-slate-800";
+                clueButton.textContent = `${entry.number}. ${entry.clue} (${entry.answer.length})`;
+                clueButton.addEventListener("click", () => selectCrosswordEntry(entry, true));
+                clueItem.appendChild(clueButton);
+                clueList.appendChild(clueItem);
+            });
+
+            for (let row = 0; row < crosswordRows; row++) {
+                for (let column = 0; column < crosswordColumns; column++) {
+                    const key = `${row}:${column}`;
+                    const cellData = cells.get(key);
+                    const square = document.createElement("div");
+                    square.className = cellData ? "crossword-cell" : "crossword-cell crossword-cell-black";
+
+                    if (cellData) {
+                        if (clueNumbers.has(key)) {
+                            const number = document.createElement("span");
+                            number.className = "crossword-cell-number";
+                            number.textContent = clueNumbers.get(key);
+                            square.appendChild(number);
+                        }
+
+                        const input = document.createElement("input");
+                        input.type = "text";
+                        input.maxLength = 1;
+                        input.autocomplete = "off";
+                        input.autocapitalize = "characters";
+                        input.spellcheck = false;
+                        input.dataset.row = row;
+                        input.dataset.column = column;
+                        input.setAttribute("aria-label", `Row ${row + 1}, column ${column + 1}`);
+                        input.addEventListener("focus", () => focusCrosswordCell(input));
+                        input.addEventListener("input", () => {
+                            input.value = input.value.toUpperCase().replace(/[^A-Z]/g, "").slice(-1);
+                            square.classList.remove("crossword-cell-checked-correct", "crossword-cell-checked-incorrect");
+                            updateCrosswordProgress();
+                            if (input.value) moveInCrosswordEntry(1);
+                        });
+                        input.addEventListener("keydown", event => handleCrosswordKeydown(event, input));
+                        square.appendChild(input);
+                    } else {
+                        square.setAttribute("aria-hidden", "true");
+                    }
+
+                    grid.appendChild(square);
+                }
+            }
+
+            document.querySelectorAll(".crossword-direction-btn").forEach(button => {
+                button.addEventListener("click", () => setCrosswordDirection(button.dataset.crosswordDirection));
+            });
+            document.getElementById("crosswordCheckBtn").addEventListener("click", checkCrossword);
+            document.getElementById("crosswordClearBtn").addEventListener("click", clearCrossword);
+            crosswordActiveEntry = crosswordEntries[0];
+            crosswordCurrentCell = { row: crosswordActiveEntry.row, column: crosswordActiveEntry.column };
+            updateCrosswordSelection();
+        }
+
+        function focusCrosswordCell(input) {
+            const row = Number(input.dataset.row);
+            const column = Number(input.dataset.column);
+            crosswordCurrentCell = { row, column };
+            const entry = crosswordEntries.find(candidate => candidate.direction === crosswordDirection && crosswordCellIsInEntry(candidate, row, column));
+            if (entry) crosswordActiveEntry = entry;
+            else {
+                crosswordActiveEntry = crosswordEntries.find(candidate => crosswordCellIsInEntry(candidate, row, column));
+                if (crosswordActiveEntry) crosswordDirection = crosswordActiveEntry.direction;
+            }
+            updateCrosswordSelection();
+        }
+
+        function crosswordCellIsInEntry(entry, row, column) {
+            const rowStep = entry.direction === "D" ? 1 : 0;
+            const columnStep = entry.direction === "A" ? 1 : 0;
+            return Array.from({ length: entry.answer.length }, (_, index) => [entry.row + rowStep * index, entry.column + columnStep * index])
+                .some(([entryRow, entryColumn]) => entryRow === row && entryColumn === column);
+        }
+
+        function selectCrosswordEntry(entry, shouldFocus) {
+            crosswordActiveEntry = entry;
+            crosswordDirection = entry.direction;
+            crosswordCurrentCell = { row: entry.row, column: entry.column };
+            updateCrosswordSelection();
+            const input = getCrosswordInput(entry.row, entry.column);
+            if (shouldFocus && input) input.focus();
+        }
+
+        function setCrosswordDirection(direction) {
+            const row = crosswordCurrentCell?.row ?? 0;
+            const column = crosswordCurrentCell?.column ?? 0;
+            const entry = crosswordEntries.find(candidate => candidate.direction === direction && crosswordCellIsInEntry(candidate, row, column));
+            if (entry) {
+                crosswordDirection = direction;
+                crosswordActiveEntry = entry;
+                updateCrosswordSelection();
+                return;
+            }
+
+            const nextEntry = crosswordEntries.find(candidate => candidate.direction === direction);
+            if (nextEntry) selectCrosswordEntry(nextEntry, true);
+        }
+
+        function updateCrosswordSelection() {
+            const grid = document.getElementById("crosswordGrid");
+            if (!grid || !crosswordActiveEntry) return;
+            grid.querySelectorAll(".crossword-cell-active").forEach(cell => cell.classList.remove("crossword-cell-active"));
+
+            const rowStep = crosswordActiveEntry.direction === "D" ? 1 : 0;
+            const columnStep = crosswordActiveEntry.direction === "A" ? 1 : 0;
+            for (let index = 0; index < crosswordActiveEntry.answer.length; index++) {
+                const input = getCrosswordInput(crosswordActiveEntry.row + rowStep * index, crosswordActiveEntry.column + columnStep * index);
+                if (input) input.parentElement.classList.add("crossword-cell-active");
+            }
+
+            document.querySelectorAll(".crossword-direction-btn").forEach(button => {
+                const selected = button.dataset.crosswordDirection === crosswordDirection;
+                button.setAttribute("aria-pressed", selected);
+                button.classList.toggle("bg-brandBlue", selected);
+                button.classList.toggle("text-white", selected);
+                button.classList.toggle("text-slate-600", !selected);
+                button.classList.toggle("dark:text-slate-300", !selected);
+            });
+            document.querySelectorAll("[data-crossword-number]").forEach(button => {
+                const selected = Number(button.dataset.crosswordNumber) === crosswordActiveEntry.number && button.dataset.crosswordDirection === crosswordDirection;
+                button.classList.toggle("bg-blue-100", selected);
+                button.classList.toggle("dark:bg-slate-800", selected);
+                button.classList.toggle("font-bold", selected);
+            });
+        }
+
+        function getCrosswordInput(row, column) {
+            return document.querySelector(`#crosswordGrid input[data-row="${row}"][data-column="${column}"]`);
+        }
+
+        function moveInCrosswordEntry(offset) {
+            if (!crosswordActiveEntry || !crosswordCurrentCell) return;
+            const rowStep = crosswordActiveEntry.direction === "D" ? 1 : 0;
+            const columnStep = crosswordActiveEntry.direction === "A" ? 1 : 0;
+            const currentIndex = Array.from({ length: crosswordActiveEntry.answer.length }, (_, index) => index)
+                .find(index => crosswordActiveEntry.row + rowStep * index === crosswordCurrentCell.row && crosswordActiveEntry.column + columnStep * index === crosswordCurrentCell.column);
+            const nextIndex = currentIndex + offset;
+            if (nextIndex < 0 || nextIndex >= crosswordActiveEntry.answer.length) return;
+            const input = getCrosswordInput(crosswordActiveEntry.row + rowStep * nextIndex, crosswordActiveEntry.column + columnStep * nextIndex);
+            if (input) input.focus();
+        }
+
+        function moveAcrossCrosswordGrid(input, rowStep, columnStep) {
+            let row = Number(input.dataset.row) + rowStep;
+            let column = Number(input.dataset.column) + columnStep;
+            while (row >= 0 && row < crosswordRows && column >= 0 && column < crosswordColumns) {
+                const nextInput = getCrosswordInput(row, column);
+                if (nextInput) {
+                    nextInput.focus();
+                    return;
+                }
+                row += rowStep;
+                column += columnStep;
+            }
+        }
+
+        function handleCrosswordKeydown(event, input) {
+            const arrowMoves = {
+                ArrowUp: [-1, 0],
+                ArrowDown: [1, 0],
+                ArrowLeft: [0, -1],
+                ArrowRight: [0, 1]
+            };
+            if (arrowMoves[event.key]) {
+                event.preventDefault();
+                moveAcrossCrosswordGrid(input, ...arrowMoves[event.key]);
+            } else if (event.key === " " || event.key === "Spacebar") {
+                event.preventDefault();
+                setCrosswordDirection(crosswordDirection === "A" ? "D" : "A");
+            } else if (event.key === "Backspace" && !input.value) {
+                event.preventDefault();
+                moveInCrosswordEntry(-1);
+            }
+        }
+
+        function updateCrosswordProgress() {
+            const solved = crosswordEntries.filter(entry => crosswordEntryIsCorrect(entry)).length;
+            document.getElementById("crosswordProgress").textContent = `${solved} / ${crosswordEntries.length} clues solved`;
+            if (solved === crosswordEntries.length) document.getElementById("crosswordMessage").textContent = "You solved all 20 clues!";
+        }
+
+        function crosswordEntryIsCorrect(entry) {
+            const rowStep = entry.direction === "D" ? 1 : 0;
+            const columnStep = entry.direction === "A" ? 1 : 0;
+            return Array.from(entry.answer).every((letter, index) => {
+                const input = getCrosswordInput(entry.row + rowStep * index, entry.column + columnStep * index);
+                return input?.value === letter;
+            });
+        }
+
+        function checkCrossword() {
+            let solved = 0;
+            crosswordEntries.forEach(entry => {
+                if (crosswordEntryIsCorrect(entry)) solved++;
+            });
+
+            document.querySelectorAll("#crosswordGrid input").forEach(input => {
+                const row = Number(input.dataset.row);
+                const column = Number(input.dataset.column);
+                const expected = crosswordEntries.find(entry => crosswordCellIsInEntry(entry, row, column));
+                const index = expected.direction === "D" ? row - expected.row : column - expected.column;
+                const isCorrect = input.value === expected.answer[index];
+                input.parentElement.classList.toggle("crossword-cell-checked-correct", isCorrect);
+                input.parentElement.classList.toggle("crossword-cell-checked-incorrect", Boolean(input.value) && !isCorrect);
+            });
+
+            document.getElementById("crosswordProgress").textContent = `${solved} / ${crosswordEntries.length} clues solved`;
+            document.getElementById("crosswordMessage").textContent = solved === crosswordEntries.length
+                ? "You solved all 20 clues!"
+                : `${solved} of ${crosswordEntries.length} clues correct. Incorrect letters are highlighted.`;
+        }
+
+        function clearCrossword() {
+            document.querySelectorAll("#crosswordGrid input").forEach(input => {
+                input.value = "";
+                input.parentElement.classList.remove("crossword-cell-checked-correct", "crossword-cell-checked-incorrect");
+            });
+            document.getElementById("crosswordMessage").textContent = "Puzzle cleared. Select a square or clue to begin.";
+            updateCrosswordProgress();
+            selectCrosswordEntry(crosswordEntries[0], false);
+        }
+
+        function loadAllSportsStats() {
+            favoriteSportsTeams.forEach(loadSportsTeamStats);
+        }
+
+        async function loadSportsTeamStats(team) {
+            const status = document.querySelector(`[data-team-status="${team.id}"]`);
+            const results = document.querySelector(`[data-team-results="${team.id}"]`);
+            const updated = document.querySelector(`[data-team-updated="${team.id}"]`);
+            if (!status || !results || !updated) return;
+
+            status.textContent = "Updating";
+            try {
+                const baseUrl = `https://site.api.espn.com/apis/site/v2/sports/${team.path}`;
+                const [scheduleResponse, statsResponse] = await Promise.all([
+                    fetch(`${baseUrl}/schedule`),
+                    fetch(`${baseUrl}/statistics`)
+                ]);
+                if (!scheduleResponse.ok || !statsResponse.ok) throw new Error("ESPN request failed");
+
+                const [schedule, statsData] = await Promise.all([
+                    scheduleResponse.json(),
+                    statsResponse.json()
+                ]);
+                const statItems = (statsData.results?.stats?.categories || []).flatMap(category => category.stats || []);
+
+                document.querySelector(`[data-team-record="${team.id}"]`).textContent = schedule.team?.recordSummary || "--";
+                document.querySelector(`[data-team-standing="${team.id}"]`).textContent = schedule.team?.standingSummary || schedule.team?.seasonSummary || "Current season";
+                team.stats.forEach(statDefinition => {
+                    const stat = statItems.find(item => item.name === statDefinition.key);
+                    const value = stat?.displayValue || "--";
+                    const statElement = document.querySelector(`[data-team-stat="${team.id}:${statDefinition.key}"]`);
+                    if (statElement) statElement.textContent = value === "--" ? value : `${value}${statDefinition.suffix}`;
+                });
+
+                const completedGames = (schedule.events || [])
+                    .map(event => ({ event, competition: event.competitions?.[0] }))
+                    .filter(({ competition }) => competition?.status?.type?.completed)
+                    .sort((first, second) => new Date(second.event.date) - new Date(first.event.date))
+                    .slice(0, 3);
+
+                results.replaceChildren();
+                if (completedGames.length === 0) {
+                    const empty = document.createElement("li");
+                    empty.className = "text-slate-500 dark:text-slate-400";
+                    empty.textContent = "No completed games available this season yet.";
+                    results.appendChild(empty);
+                } else {
+                    completedGames.forEach(({ event, competition }) => {
+                        const favorite = competition.competitors.find(item => item.team?.abbreviation === team.abbreviation);
+                        const opponent = competition.competitors.find(item => item.team?.abbreviation !== team.abbreviation);
+                        if (!favorite || !opponent) return;
+
+                        const teamScore = favorite.score?.displayValue ?? favorite.score?.value ?? favorite.score ?? "--";
+                        const opponentScore = opponent.score?.displayValue ?? opponent.score?.value ?? opponent.score ?? "--";
+                        const numericTeamScore = Number(teamScore);
+                        const numericOpponentScore = Number(opponentScore);
+                        const resultCode = numericTeamScore === numericOpponentScore ? "T" : numericTeamScore > numericOpponentScore ? "W" : "L";
+                        const date = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(event.date));
+                        const listItem = document.createElement("li");
+                        listItem.className = "flex items-center justify-between gap-2 text-sm";
+
+                        const matchup = document.createElement("span");
+                        matchup.className = "min-w-0 truncate text-slate-600 dark:text-slate-300";
+                        matchup.textContent = `${date} ${favorite.homeAway === "home" ? "vs" : "@"} ${opponent.team?.abbreviation || opponent.team?.shortDisplayName || "Opponent"}`;
+
+                        const score = document.createElement("span");
+                        score.className = "shrink-0 font-bold text-slate-900 dark:text-white";
+                        score.textContent = `${teamScore}-${opponentScore}`;
+
+                        const resultLabel = document.createElement("span");
+                        resultLabel.className = `w-4 shrink-0 text-right text-xs font-bold ${resultCode === "W" ? "text-emerald-600 dark:text-emerald-400" : resultCode === "L" ? "text-rose-600 dark:text-rose-400" : "text-slate-500"}`;
+                        resultLabel.textContent = resultCode;
+                        listItem.append(matchup, score, resultLabel);
+                        results.appendChild(listItem);
+                    });
+                }
+
+                status.textContent = "Live stats";
+                updated.textContent = `Updated ${new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date())}`;
+            } catch (error) {
+                status.textContent = "Unavailable";
+                updated.textContent = "Could not load ESPN data";
+                results.replaceChildren();
+                const message = document.createElement("li");
+                message.className = "text-slate-500 dark:text-slate-400";
+                message.textContent = "Stats are temporarily unavailable. Try refreshing.";
+                results.appendChild(message);
+            }
+        }
+
+        // --- Navigation ---
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) targetPage.classList.remove('hidden');
+
+            if (pageId === "flappy-bird") {
+                initializeFlappyBird();
+                if (flappyBirdGame) {
+                    const scene = flappyBirdGame.scene.getScene("FlappyBirdScene");
+                    if (scene?.finished) scene.startNewGame();
+                    else if (scene) flappyBirdGame.scene.resume("FlappyBirdScene");
+                }
+            } else if (flappyBirdGame) {
+                flappyBirdGame.scene.pause("FlappyBirdScene");
+            }
+
+            if (pageId === "mini-golf") {
+                initializeMiniGolf();
+                if (miniGolfGame) miniGolfGame.scene.resume("MiniGolfScene");
+            } else if (miniGolfGame) {
+                miniGolfGame.scene.pause("MiniGolfScene");
+            }
+
+            if (pageId === "free-throw") {
+                initializeFreeThrowChallenge();
+                if (freeThrowGame) freeThrowGame.scene.resume("FreeThrowScene");
+            } else if (freeThrowGame) {
+                freeThrowGame.scene.pause("FreeThrowScene");
+            }
+
+            document.querySelectorAll(".games-menu").forEach(menu => menu.open = false);
+            const mobileMenu = document.getElementById("mobileMenu");
+            if (mobileMenu) mobileMenu.classList.add("hidden");
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Odometer Core Logic ---
+        function renderOdometerGrid() {
+            const grid = document.getElementById("odometerGrid");
+            if (!grid) return;
+
+            grid.innerHTML = "";
+            const binStr = odometerValue.toString(2).padStart(8, '0');
+
+            for (let i = 0; i < 8; i++) {
+                const bitVal = binStr[i];
+                const bitWeight = bitWeights[i];
+                const isActive = bitVal === '1';
+
+                const card = document.createElement("div");
+                card.className = "cursor-pointer select-none group";
+                card.onclick = () => toggleBit(i);
+
+                card.innerHTML = `
+                    <div id="bitCard-${i}" class="bit-card-inner relative p-3 sm:p-4 rounded-xl border font-mono transition-all duration-300 ${
+                        isActive ? 'bit-active border-cyan-300 font-black' : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }">
+                        <div class="text-2xl sm:text-3xl font-black">${bitVal}</div>
+                        <div class="text-[9px] sm:text-[10px] font-bold opacity-80 mt-1 uppercase">${bitWeight}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function updateOdometerDisplay() {
+            const binStr = odometerValue.toString(2).padStart(8, '0');
+            
+            // Update Decimal Display
+            const decDisp = document.getElementById("odoDecimalDisplay");
+            if (decDisp) decDisp.textContent = odometerValue;
+
+            // Update Binary Display
+            const binDisp = document.getElementById("odoBinaryDisplay");
+            if (binDisp) binDisp.textContent = binStr;
+
+            // Update ASCII Display
+            const asciiDisp = document.getElementById("odoAsciiDisplay");
+            if (asciiDisp) {
+                if (odometerValue >= 32 && odometerValue <= 126) {
+                    asciiDisp.textContent = `'${String.fromCharCode(odometerValue)}'`;
+                } else if (odometerValue === 0) {
+                    asciiDisp.textContent = "[NUL]";
+                } else if (odometerValue === 32) {
+                    asciiDisp.textContent = "[SPACE]";
+                } else {
+                    asciiDisp.textContent = `[ASCII ${odometerValue}]`;
+                }
+            }
+
+            // Update Bit Wheels with Flip Animation
+            for (let i = 0; i < 8; i++) {
+                const cardInner = document.getElementById(`bitCard-${i}`);
+                if (cardInner) {
+                    const isActive = binStr[i] === '1';
+                    
+                    // Trigger flip class
+                    cardInner.classList.add("bit-card-flip");
+                    setTimeout(() => cardInner.classList.remove("bit-card-flip"), 300);
+
+                    if (isActive) {
+                        cardInner.className = "bit-card-inner relative p-3 sm:p-4 rounded-xl border font-mono bit-active border-cyan-300 font-black";
+                    } else {
+                        cardInner.className = "bit-card-inner relative p-3 sm:p-4 rounded-xl border font-mono bg-slate-800/80 border-slate-700 text-slate-400 hover:border-slate-500";
+                    }
+                    cardInner.firstElementChild.textContent = binStr[i];
+                }
+            }
+        }
+
+        function stepOdometer(step) {
+            odometerValue = (odometerValue + step + 256) % 256;
+            updateOdometerDisplay();
+        }
+
+        function resetOdometer() {
+            odometerValue = 0;
+            updateOdometerDisplay();
+            showToast("Odometer reset to 00000000");
+        }
+
+        function toggleBit(bitIndex) {
+            const weight = bitWeights[bitIndex];
+            const binStr = odometerValue.toString(2).padStart(8, '0');
+            
+            if (binStr[bitIndex] === '1') {
+                odometerValue -= weight;
+            } else {
+                odometerValue += weight;
+            }
+            updateOdometerDisplay();
+        }
+
+        function toggleAutoPlay() {
+            const btn = document.getElementById("autoPlayBtn");
+            const icon = document.getElementById("autoPlayIcon");
+            const text = document.getElementById("autoPlayText");
+
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                btn.className = "bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-extrabold px-4 py-2 rounded-lg text-sm shadow transition-all flex items-center gap-1.5";
+                icon.className = "fa-solid fa-play";
+                text.textContent = "Auto Tick";
+                showToast("Auto-play paused");
+            } else {
+                autoPlayInterval = setInterval(() => {
+                    stepOdometer(1);
+                }, autoSpeed);
+                btn.className = "bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold px-4 py-2 rounded-lg text-sm shadow transition-all flex items-center gap-1.5";
+                icon.className = "fa-solid fa-pause";
+                text.textContent = "Pause";
+                showToast("Auto-play ticking");
+            }
+        }
+
+        function changeAutoSpeed(newSpeedMs) {
+            autoSpeed = parseInt(newSpeedMs);
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = setInterval(() => {
+                    stepOdometer(1);
+                }, autoSpeed);
+            }
+        }
+
+        // Secondary Text-to-Binary Conversion
+        function convertTextToBinary(text) {
+            const resContainer = document.getElementById("binaryPlaygroundResult");
+            if (!resContainer) return;
+
+            if (!text) {
+                resContainer.textContent = "...";
+                return;
+            }
+
+            const binaryArray = [];
+            for (let i = 0; i < text.length; i++) {
+                binaryArray.push(text.charCodeAt(i).toString(2).padStart(8, '0'));
+            }
+            resContainer.textContent = binaryArray.join(" ");
+        }
+
+        // --- Hobby List Logic ---
+        function loadHobbies() {
+            const hobbyList = document.getElementById("hobbyList");
+            if (!hobbyList) return;
+
+            const defaultHobbies = Array.from(hobbyList.children, item =>
+                item.querySelector("span")?.textContent.trim() || item.textContent.trim()
+            ).filter(Boolean);
+            let hobbies = defaultHobbies;
+
+            try {
+                const savedHobbies = JSON.parse(localStorage.getItem(hobbyStorageKey));
+                if (Array.isArray(savedHobbies) && savedHobbies.every(hobby => typeof hobby === "string")) {
+                    hobbies = savedHobbies;
+                }
+            } catch (error) {
+                hobbies = defaultHobbies;
+            }
+
+            hobbyList.replaceChildren(...hobbies.map(createHobbyElement));
+            saveHobbies();
+            updateHobbyCount();
+        }
+
+        function createHobbyElement(text) {
+            const iconClasses = {
+                "Running": "fa-solid fa-person-running text-brandBlue dark:text-brandCyan",
+                "Golfing": "fa-solid fa-golf-ball-tee text-emerald-500",
+                "Seeing Friends": "fa-solid fa-users text-amber-500",
+                "Playing video games": "fa-solid fa-gamepad text-indigo-500"
+            };
+            const li = document.createElement("li");
+            li.className = "hobby-item flex items-center justify-between p-4 rounded-xl bg-white/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all hover:scale-[1.01]";
+
+            const label = document.createElement("span");
+            label.className = "hobby-name font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-3";
+            const icon = document.createElement("i");
+            icon.className = iconClasses[text] || "fa-solid fa-star text-brandCyan";
+            icon.setAttribute("aria-hidden", "true");
+            label.append(icon, document.createTextNode(text));
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "text-slate-400 hover:text-red-500 p-2 rounded-lg transition-colors";
+            removeButton.title = "Delete Hobby";
+            removeButton.setAttribute("aria-label", `Delete ${text}`);
+            removeButton.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i>';
+            removeButton.addEventListener("click", () => removeHobby(removeButton));
+
+            li.append(label, removeButton);
+            return li;
+        }
+
+        function saveHobbies() {
+            const hobbyList = document.getElementById("hobbyList");
+            if (!hobbyList) return;
+
+            const hobbies = Array.from(hobbyList.querySelectorAll(".hobby-name"), label => label.textContent.trim());
+            try {
+                localStorage.setItem(hobbyStorageKey, JSON.stringify(hobbies));
+            } catch (error) {
+                console.warn("Hobbies could not be saved in this browser.");
+            }
+        }
+
+        function addHobby() {
+            const hobbyInput = document.getElementById("hobbyInput");
+            const hobbyList = document.getElementById("hobbyList");
+
+            if (!hobbyInput || !hobbyList) return;
+
+            const text = hobbyInput.value.trim();
+
+            if (text === "") {
+                showToast("Please type a hobby first!", "fa-circle-exclamation");
+                return;
+            }
+
+            hobbyList.appendChild(createHobbyElement(text));
+            hobbyInput.value = "";
+            hobbyInput.focus();
+
+            saveHobbies();
+            updateHobbyCount();
+            showToast(`Added "${text}"`);
+        }
+
+        function removeHobby(buttonElement) {
+            const li = buttonElement.closest("li");
+            if (li) {
+                li.remove();
+                saveHobbies();
+                updateHobbyCount();
+                showToast("Hobby removed");
+            }
+        }
+
+        function updateHobbyCount() {
+            const hobbyList = document.getElementById("hobbyList");
+            const hobbyCountBadge = document.getElementById("hobbyCountBadge");
+            if (hobbyList && hobbyCountBadge) {
+                const count = hobbyList.children.length;
+                hobbyCountBadge.textContent = `${count} Item${count === 1 ? '' : 's'}`;
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        const rockPaperScissorsScore = { wins: 0, draws: 0, losses: 0 };
+        const rockPaperScissorsLabels = { rock: "Rock", paper: "Paper", scissors: "Scissors" };
+        const rockPaperScissorsBeats = { rock: "scissors", paper: "rock", scissors: "paper" };
+        let flappyBirdGame = null;
+        let flappyBirdBestScore = Number(localStorage.getItem("flappyBirdBestScore")) || 0;
+        document.getElementById("flappyBestScore").textContent = flappyBirdBestScore;
+        let miniGolfGame = null;
+        let miniGolfBestStrokes = Number(localStorage.getItem("miniGolfBestStrokes")) || 0;
+        document.getElementById("miniGolfBest").textContent = miniGolfBestStrokes || "--";
+        let freeThrowGame = null;
+        let freeThrowBestStreak = Number(localStorage.getItem("freeThrowBestStreak")) || 0;
+        document.getElementById("freeThrowBest").textContent = freeThrowBestStreak;
+
+        function playRockPaperScissors(playerChoice) {
+            const choices = Object.keys(rockPaperScissorsLabels);
+            const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+            let outcome;
+
+            if (playerChoice === computerChoice) {
+                rockPaperScissorsScore.draws++;
+                outcome = "It's a draw!";
+            } else if (rockPaperScissorsBeats[playerChoice] === computerChoice) {
+                rockPaperScissorsScore.wins++;
+                outcome = "You win this round!";
+            } else {
+                rockPaperScissorsScore.losses++;
+                outcome = "The computer wins this round.";
+            }
+
+            document.getElementById("rpsPlayerMove").textContent = rockPaperScissorsLabels[playerChoice];
+            document.getElementById("rpsComputerMove").textContent = rockPaperScissorsLabels[computerChoice];
+            document.getElementById("rpsStatus").textContent = outcome;
+            document.getElementById("rpsWins").textContent = rockPaperScissorsScore.wins;
+            document.getElementById("rpsDraws").textContent = rockPaperScissorsScore.draws;
+            document.getElementById("rpsLosses").textContent = rockPaperScissorsScore.losses;
+        }
+
+        function resetRockPaperScissors() {
+            rockPaperScissorsScore.wins = 0;
+            rockPaperScissorsScore.draws = 0;
+            rockPaperScissorsScore.losses = 0;
+            document.getElementById("rpsWins").textContent = "0";
+            document.getElementById("rpsDraws").textContent = "0";
+            document.getElementById("rpsLosses").textContent = "0";
+            document.getElementById("rpsPlayerMove").textContent = "?";
+            document.getElementById("rpsComputerMove").textContent = "?";
+            document.getElementById("rpsStatus").textContent = "Choose your move to start.";
+        }
+
+        function initializeFlappyBird() {
+            if (flappyBirdGame) return;
+            if (!window.Phaser) {
+                document.getElementById("flappyStatus").textContent = "The game engine could not load. Check your connection and reload.";
+                return;
+            }
+
+            const gameWidth = 480;
+            const gameHeight = 640;
+            const groundHeight = 58;
+            const pipeWidth = 72;
+            const pipeSpeed = 205;
+            const birdGravity = 980;
+            const flapVelocity = -370;
+
+            class FlappyBirdScene extends Phaser.Scene {
+                constructor() {
+                    super("FlappyBirdScene");
+                    this.score = 0;
+                    this.bestScore = flappyBirdBestScore;
+                    this.started = false;
+                    this.finished = false;
+                    this.pairs = [];
+                }
+
+                create() {
+                    this.add.rectangle(gameWidth / 2, gameHeight / 2, gameWidth, gameHeight, 0x8eddf2);
+                    this.add.circle(390, 95, 34, 0xffe082);
+                    this.drawCloud(80, 115);
+                    this.drawCloud(305, 205);
+                    this.add.rectangle(gameWidth / 2, gameHeight - groundHeight, gameWidth, 4, 0x64a637);
+
+                    const ground = this.add.rectangle(gameWidth / 2, gameHeight - groundHeight / 2, gameWidth, groundHeight, 0x98cb54);
+                    this.physics.add.existing(ground, true);
+
+                    const birdGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+                    birdGraphics.fillStyle(0xf8c84a, 1);
+                    birdGraphics.fillEllipse(22, 19, 36, 28);
+                    birdGraphics.fillStyle(0xe3a82f, 1);
+                    birdGraphics.fillEllipse(17, 22, 18, 12);
+                    birdGraphics.fillStyle(0xffffff, 1);
+                    birdGraphics.fillCircle(31, 15, 6);
+                    birdGraphics.fillStyle(0x1f2937, 1);
+                    birdGraphics.fillCircle(33, 15, 2.5);
+                    birdGraphics.fillStyle(0xf0764a, 1);
+                    birdGraphics.fillTriangle(37, 21, 49, 24, 37, 27);
+                    birdGraphics.generateTexture("flappyBirdPlayer", 50, 40);
+                    birdGraphics.destroy();
+
+                    this.bird = this.physics.add.sprite(135, gameHeight / 2, "flappyBirdPlayer");
+                    this.bird.body.setCircle(15, 10, 5);
+                    this.bird.body.setAllowGravity(false);
+                    this.bird.setDepth(3);
+                    this.physics.world.gravity.y = birdGravity;
+                    this.physics.add.collider(this.bird, ground, this.endGame, null, this);
+
+                    this.pipes = this.physics.add.group({ allowGravity: false, immovable: true });
+                    this.physics.add.overlap(this.bird, this.pipes, this.endGame, null, this);
+
+                    this.scoreText = this.add.text(gameWidth / 2, 44, "0", {
+                        fontFamily: "system-ui, sans-serif",
+                        fontSize: "42px",
+                        fontStyle: "bold",
+                        color: "#ffffff",
+                        stroke: "#31536a",
+                        strokeThickness: 5
+                    }).setOrigin(0.5).setDepth(4);
+                    this.prompt = this.add.text(gameWidth / 2, 245, "TAP OR PRESS SPACE\nTO START", {
+                        fontFamily: "system-ui, sans-serif",
+                        fontSize: "21px",
+                        fontStyle: "bold",
+                        align: "center",
+                        color: "#ffffff",
+                        stroke: "#31536a",
+                        strokeThickness: 5
+                    }).setOrigin(0.5).setDepth(4);
+
+                    document.getElementById("flappyStatus").textContent = "Press Space, click, or tap to flap.";
+                    this.physics.world.pause();
+                    this.input.on("pointerdown", this.flap, this);
+                    document.addEventListener("keydown", this.handleSpaceKey);
+                    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.removeEventListener("keydown", this.handleSpaceKey));
+                }
+
+                drawCloud(x, y) {
+                    const cloud = this.add.graphics();
+                    cloud.fillStyle(0xffffff, 0.75);
+                    cloud.fillCircle(x, y, 21);
+                    cloud.fillCircle(x + 23, y - 9, 27);
+                    cloud.fillCircle(x + 49, y, 20);
+                    cloud.fillRoundedRect(x - 1, y, 51, 20, 10);
+                }
+
+                handleSpaceKey = event => {
+                    if (event.code !== "Space" || event.repeat || document.getElementById("page-flappy-bird").classList.contains("hidden")) return;
+                    event.preventDefault();
+                    this.flap();
+                };
+
+                flap() {
+                    if (this.finished) return;
+                    if (!this.started) {
+                        this.started = true;
+                        this.physics.world.resume();
+                        this.bird.body.setAllowGravity(true);
+                        this.prompt.setVisible(false);
+                        this.spawnPipePair();
+                        this.pipeTimer = this.time.addEvent({ delay: 1500, callback: this.spawnPipePair, callbackScope: this, loop: true });
+                        document.getElementById("flappyStatus").textContent = "Keep flying. Avoid the pipes and ground.";
+                        document.getElementById("flappyRestartButton").innerHTML = '<i class="fa-solid fa-rotate-right mr-1" aria-hidden="true"></i>Restart';
+                    }
+                    this.bird.body.setVelocityY(flapVelocity);
+                }
+
+                spawnPipePair() {
+                    const gapSize = 176;
+                    const gapCenter = Phaser.Math.Between(230, 435);
+                    const gapTop = gapCenter - gapSize / 2;
+                    const gapBottom = gapCenter + gapSize / 2;
+                    const pipeX = gameWidth + pipeWidth;
+                    const pipeColor = 0x4d9c54;
+                    const pipeEdge = 0x2b7044;
+                    const capColor = 0x75bd5e;
+                    const capHeight = 20;
+                    const pairPipes = [];
+
+                    const addPipe = (x, y, width, height, color, strokeColor) => {
+                        const pipe = this.add.rectangle(x, y, width, height, color).setStrokeStyle(3, strokeColor);
+                        this.physics.add.existing(pipe);
+                        this.pipes.add(pipe);
+                        pipe.body.setAllowGravity(false);
+                        pipe.body.setImmovable(true);
+                        pipe.body.setVelocityX(-pipeSpeed);
+                        pairPipes.push(pipe);
+                    };
+
+                    addPipe(pipeX, (gapTop - capHeight / 2) / 2, pipeWidth, gapTop - capHeight / 2, pipeColor, pipeEdge);
+                    addPipe(pipeX, gapTop - capHeight / 2, pipeWidth + 12, capHeight, capColor, pipeEdge);
+                    addPipe(pipeX, gapBottom + capHeight / 2, pipeWidth + 12, capHeight, capColor, pipeEdge);
+                    addPipe(pipeX, (gapBottom + capHeight + gameHeight - groundHeight) / 2, pipeWidth, gameHeight - groundHeight - gapBottom - capHeight, pipeColor, pipeEdge);
+                    this.pairs.push({ pipes: pairPipes, scored: false });
+                }
+
+                update() {
+                    if (!this.started || this.finished) return;
+                    this.bird.rotation = Phaser.Math.Clamp(this.bird.body.velocity.y / 900, -0.4, 0.8);
+                    if (this.bird.y < -20) this.endGame();
+
+                    this.pairs = this.pairs.filter(pair => {
+                        const pipeX = pair.pipes[0].x;
+                        if (!pair.scored && pipeX + pipeWidth / 2 < this.bird.x) {
+                            pair.scored = true;
+                            this.score++;
+                            this.scoreText.setText(this.score);
+                            document.getElementById("flappyScore").textContent = this.score;
+                        }
+                        if (pipeX < -pipeWidth) {
+                            pair.pipes.forEach(pipe => pipe.destroy());
+                            return false;
+                        }
+                        return true;
+                    });
+                }
+
+                endGame() {
+                    if (this.finished) return;
+                    this.finished = true;
+                    this.physics.world.pause();
+                    if (this.pipeTimer) this.pipeTimer.remove();
+                    if (this.score > this.bestScore) {
+                        this.bestScore = this.score;
+                        flappyBirdBestScore = this.score;
+                        localStorage.setItem("flappyBirdBestScore", this.score);
+                        document.getElementById("flappyBestScore").textContent = this.score;
+                    }
+                    this.prompt.setText("FLIGHT OVER\nTAP OR PRESS SPACE TO RETRY").setVisible(true);
+                    document.getElementById("flappyStatus").textContent = `Flight over. You scored ${this.score}.`;
+                    document.getElementById("flappyRestartButton").innerHTML = '<i class="fa-solid fa-rotate-right mr-1" aria-hidden="true"></i>Play again';
+                }
+
+                startNewGame() {
+                    this.physics.world.resume();
+                    if (this.pipeTimer) this.pipeTimer.remove();
+                    this.pairs.forEach(pair => pair.pipes.forEach(pipe => pipe.destroy()));
+                    this.pairs = [];
+                    this.score = 0;
+                    this.started = false;
+                    this.finished = false;
+                    this.bird.setPosition(135, gameHeight / 2).setRotation(0);
+                    this.bird.body.setVelocity(0, 0);
+                    this.bird.body.setAllowGravity(false);
+                    this.scoreText.setText("0");
+                    this.prompt.setText("TAP OR PRESS SPACE\nTO START").setVisible(true);
+                    document.getElementById("flappyScore").textContent = "0";
+                    document.getElementById("flappyStatus").textContent = "Press Space, click, or tap to flap.";
+                    document.getElementById("flappyRestartButton").innerHTML = '<i class="fa-solid fa-play mr-1" aria-hidden="true"></i>Start game';
+                }
+            }
+
+            flappyBirdGame = new Phaser.Game({
+                type: Phaser.AUTO,
+                width: gameWidth,
+                height: gameHeight,
+                parent: "flappyGameFrame",
+                backgroundColor: "#8eddf2",
+                scale: {
+                    mode: Phaser.Scale.FIT,
+                    autoCenter: Phaser.Scale.CENTER_BOTH
+                },
+                physics: {
+                    default: "arcade",
+                    arcade: { debug: false }
+                },
+                scene: FlappyBirdScene
+            });
+        }
+
+        function startFlappyBirdGame() {
+            const scene = flappyBirdGame?.scene.getScene("FlappyBirdScene");
+            if (scene) scene.startNewGame();
+        }
+
+        function initializeMiniGolf() {
+            if (miniGolfGame || !window.Phaser) return;
+
+            const gameWidth = 720;
+            const gameHeight = 480;
+            const startPosition = { x: 82, y: 240 };
+            const holePosition = { x: 650, y: 240 };
+            const maxPullDistance = 150;
+            const launchSpeed = 4.2;
+            const waterZone = new Phaser.Geom.Rectangle(323, 144, 86, 192);
+
+            class MiniGolfScene extends Phaser.Scene {
+                constructor() {
+                    super("MiniGolfScene");
+                    this.strokes = 0;
+                    this.isDragging = false;
+                    this.isComplete = false;
+                }
+
+                create() {
+                    this.add.rectangle(gameWidth / 2, gameHeight / 2, gameWidth, gameHeight, 0x75b84c);
+                    const course = this.add.graphics();
+                    course.lineStyle(4, 0xd5ecc0, 0.9);
+                    course.strokeRoundedRect(30, 30, 660, 420, 26);
+                    course.lineStyle(2, 0x8ec96a, 0.55);
+                    for (let y = 70; y < 440; y += 32) {
+                        course.beginPath();
+                        course.moveTo(40, y);
+                        course.lineTo(680, y);
+                        course.strokePath();
+                    }
+
+                    const waterGraphics = this.add.graphics();
+                    waterGraphics.fillStyle(0x36a8b7, 1);
+                    waterGraphics.fillRoundedRect(waterZone.x, waterZone.y, waterZone.width, waterZone.height, 18);
+                    waterGraphics.lineStyle(3, 0x9ce3dd, 0.8);
+                    for (let y = waterZone.y + 28; y < waterZone.bottom - 10; y += 42) {
+                        waterGraphics.beginPath();
+                        waterGraphics.moveTo(waterZone.x + 12, y);
+                        waterGraphics.lineTo(waterZone.right - 12, y);
+                        waterGraphics.strokePath();
+                    }
+                    this.waterZone = waterZone;
+
+                    this.add.circle(holePosition.x, holePosition.y, 17, 0x14231b).setStrokeStyle(3, 0xe8e8d0);
+                    const flag = this.add.graphics();
+                    flag.lineStyle(4, 0xf5f5e8, 1);
+                    flag.beginPath();
+                    flag.moveTo(holePosition.x, holePosition.y - 10);
+                    flag.lineTo(holePosition.x, holePosition.y - 72);
+                    flag.strokePath();
+                    flag.fillStyle(0xef5c54, 1);
+                    flag.fillTriangle(holePosition.x, holePosition.y - 70, holePosition.x + 32, holePosition.y - 60, holePosition.x, holePosition.y - 50);
+
+                    this.ball = this.add.circle(startPosition.x, startPosition.y, 11, 0xf8f7ee).setStrokeStyle(2, 0x60736a);
+                    this.physics.add.existing(this.ball);
+                    this.ball.body.setCircle(10);
+                    this.ball.body.setCollideWorldBounds(true, 0.25, 0.25);
+                    this.ball.body.setBounce(0.45);
+                    this.ball.body.setDamping(false);
+                    this.ball.body.setDrag(180, 180);
+                    this.ball.body.setMaxVelocity(640, 640);
+
+                    this.physics.world.setBounds(30, 30, 660, 420);
+                    const addWall = (x, y, width, height, color = 0x9b744d) => {
+                        const wall = this.add.rectangle(x, y, width, height, color).setStrokeStyle(2, 0x704e36);
+                        this.physics.add.existing(wall, true);
+                        this.physics.add.collider(this.ball, wall);
+                    };
+
+                    addWall(360, 28, 672, 18, 0x558944);
+                    addWall(360, 452, 672, 18, 0x558944);
+                    addWall(28, 240, 18, 432, 0x558944);
+                    addWall(692, 240, 18, 432, 0x558944);
+                    addWall(225, 139, 128, 15);
+                    addWall(245, 339, 166, 15);
+                    addWall(470, 116, 18, 105);
+                    addWall(505, 337, 18, 95);
+
+                    this.aimGraphics = this.add.graphics().setDepth(5);
+                    this.holePosition = holePosition;
+                    this.physics.world.pause();
+
+                    this.input.on("pointerdown", pointer => {
+                        if (this.isComplete || this.ball.body.speed > 12) return;
+                        if (Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, this.ball.x, this.ball.y) > 30) return;
+                        this.isDragging = true;
+                        this.drawAim(pointer);
+                        document.getElementById("miniGolfStatus").textContent = "Release to putt.";
+                    });
+                    this.input.on("pointermove", pointer => {
+                        if (this.isDragging) this.drawAim(pointer);
+                    });
+                    this.input.on("pointerup", pointer => {
+                        if (!this.isDragging) return;
+                        this.isDragging = false;
+                        this.aimGraphics.clear();
+                        const pullX = this.ball.x - pointer.worldX;
+                        const pullY = this.ball.y - pointer.worldY;
+                        const distance = Math.hypot(pullX, pullY);
+                        if (distance < 10) {
+                            document.getElementById("miniGolfStatus").textContent = "Pull farther back to putt.";
+                            return;
+                        }
+                        const power = Math.min(distance, maxPullDistance) * launchSpeed;
+                        this.physics.world.resume();
+                        this.strokes++;
+                        this.updateScore();
+                        this.ball.body.setVelocity(pullX / distance * power, pullY / distance * power);
+                        document.getElementById("miniGolfStatus").textContent = `Stroke ${this.strokes}. Line up your next putt when the ball stops.`;
+                    });
+                    document.getElementById("miniGolfStatus").textContent = "Drag back from the ball, then release to putt.";
+                }
+
+                drawAim(pointer) {
+                    const dx = this.ball.x - pointer.worldX;
+                    const dy = this.ball.y - pointer.worldY;
+                    const distance = Math.hypot(dx, dy);
+                    if (distance < 1) return;
+                    const length = Math.min(distance, maxPullDistance);
+                    const endX = this.ball.x + dx / distance * length * 0.65;
+                    const endY = this.ball.y + dy / distance * length * 0.65;
+                    this.aimGraphics.clear();
+                    this.aimGraphics.lineStyle(4, 0xffffff, 0.95);
+                    this.aimGraphics.beginPath();
+                    this.aimGraphics.moveTo(this.ball.x, this.ball.y);
+                    this.aimGraphics.lineTo(endX, endY);
+                    this.aimGraphics.strokePath();
+                    this.aimGraphics.fillStyle(0xffdf70, 1);
+                    this.aimGraphics.fillCircle(endX, endY, 6);
+                }
+
+                update() {
+                    if (this.isComplete) return;
+                    if (this.isDragging) this.drawAim(this.input.activePointer);
+                    if (this.ball.body.speed > 0 && this.ball.body.speed < 8) {
+                        this.ball.body.stop();
+                        if (this.strokes > 0) document.getElementById("miniGolfStatus").textContent = "Ball stopped. Drag back from the ball for another putt.";
+                    }
+
+                    if (Phaser.Geom.Rectangle.Contains(this.waterZone, this.ball.x, this.ball.y)) {
+                        this.strokes++;
+                        this.updateScore();
+                        this.ball.setPosition(startPosition.x, startPosition.y);
+                        this.ball.body.stop();
+                        document.getElementById("miniGolfStatus").textContent = "Splash! One-stroke penalty. Try another line.";
+                        return;
+                    }
+
+                    const distanceToHole = Phaser.Math.Distance.Between(this.ball.x, this.ball.y, this.holePosition.x, this.holePosition.y);
+                    if (distanceToHole <= 27) this.finishHole();
+                }
+
+                updateScore() {
+                    document.getElementById("miniGolfStrokes").textContent = this.strokes;
+                }
+
+                finishHole() {
+                    this.isComplete = true;
+                    this.ball.setPosition(this.holePosition.x, this.holePosition.y);
+                    this.ball.body.stop();
+                    this.aimGraphics.clear();
+                    this.physics.world.pause();
+
+                    if (!miniGolfBestStrokes || this.strokes < miniGolfBestStrokes) {
+                        miniGolfBestStrokes = this.strokes;
+                        localStorage.setItem("miniGolfBestStrokes", this.strokes);
+                        document.getElementById("miniGolfBest").textContent = this.strokes;
+                    }
+
+                    const relativeToPar = this.strokes - 3;
+                    const result = relativeToPar < 0 ? `${Math.abs(relativeToPar)} under par` : relativeToPar === 0 ? "par" : `${relativeToPar} over par`;
+                    document.getElementById("miniGolfStatus").textContent = `Hole complete in ${this.strokes} strokes (${result})!`;
+                }
+
+                resetCourse() {
+                    this.physics.world.resume();
+                    this.isDragging = false;
+                    this.isComplete = false;
+                    this.strokes = 0;
+                    this.ball.setPosition(startPosition.x, startPosition.y);
+                    this.ball.body.stop();
+                    this.aimGraphics.clear();
+                    this.updateScore();
+                    document.getElementById("miniGolfStatus").textContent = "Drag back from the ball, then release to putt.";
+                }
+            }
+
+            miniGolfGame = new Phaser.Game({
+                type: Phaser.AUTO,
+                width: gameWidth,
+                height: gameHeight,
+                parent: "miniGolfGameFrame",
+                backgroundColor: "#75b84c",
+                scale: {
+                    mode: Phaser.Scale.FIT,
+                    autoCenter: Phaser.Scale.CENTER_BOTH
+                },
+                physics: {
+                    default: "arcade",
+                    arcade: { debug: false }
+                },
+                scene: MiniGolfScene
+            });
+        }
+
+        function resetMiniGolfGame() {
+            const scene = miniGolfGame?.scene.getScene("MiniGolfScene");
+            if (scene) scene.resetCourse();
+        }
+
+        function initializeFreeThrowChallenge() {
+            if (freeThrowGame || !window.Phaser) return;
+
+            const gameWidth = 640;
+            const gameHeight = 480;
+            const ballStart = { x: 125, y: 350 };
+            const hoopX = 520;
+            const hoopY = 245;
+            const rimLeft = hoopX - 37;
+            const rimRight = hoopX + 37;
+            const maxPull = 145;
+            const shotMultiplier = 5.4;
+
+            class FreeThrowScene extends Phaser.Scene {
+                constructor() {
+                    super("FreeThrowScene");
+                    this.streak = 0;
+                    this.makes = 0;
+                    this.isDragging = false;
+                    this.shotActive = false;
+                    this.shotElapsed = 0;
+                    this.previousBallY = ballStart.y;
+                }
+
+                create() {
+                    this.add.rectangle(gameWidth / 2, gameHeight / 2, gameWidth, gameHeight, 0x172a48);
+                    this.add.rectangle(gameWidth / 2, 360, gameWidth, 240, 0xc98246);
+
+                    const court = this.add.graphics();
+                    court.lineStyle(4, 0xf5dfc5, 0.9);
+                    court.strokeRect(22, 245, 596, 205);
+                    court.strokeCircle(125, 350, 59);
+                    court.strokeRect(435, 293, 160, 157);
+                    court.strokeCircle(435, 371, 58);
+                    court.lineStyle(2, 0xe7b27f, 0.7);
+                    for (let x = 35; x < gameWidth; x += 46) {
+                        court.beginPath();
+                        court.moveTo(x, 250);
+                        court.lineTo(x, 445);
+                        court.strokePath();
+                    }
+
+                    this.add.rectangle(590, 205, 12, 82, 0xf5f5f0).setStrokeStyle(2, 0x25364d);
+                    const hoopGraphics = this.add.graphics();
+                    hoopGraphics.lineStyle(5, 0xe84842, 1);
+                    hoopGraphics.beginPath();
+                    hoopGraphics.moveTo(rimLeft, hoopY);
+                    hoopGraphics.lineTo(rimRight, hoopY);
+                    hoopGraphics.strokePath();
+                    hoopGraphics.lineStyle(2, 0xece6d6, 0.8);
+                    hoopGraphics.beginPath();
+                    hoopGraphics.moveTo(rimLeft + 3, hoopY + 3);
+                    hoopGraphics.lineTo(rimLeft + 12, hoopY + 40);
+                    hoopGraphics.lineTo(hoopX, hoopY + 47);
+                    hoopGraphics.lineTo(rimRight - 12, hoopY + 40);
+                    hoopGraphics.lineTo(rimRight - 3, hoopY + 3);
+                    hoopGraphics.strokePath();
+
+                    const ballGraphic = this.make.graphics({ x: 0, y: 0, add: false });
+                    ballGraphic.fillStyle(0xf07832, 1);
+                    ballGraphic.fillCircle(18, 18, 17);
+                    ballGraphic.lineStyle(2, 0x422d25, 1);
+                    ballGraphic.strokeCircle(18, 18, 17);
+                    ballGraphic.beginPath();
+                    ballGraphic.moveTo(2, 18);
+                    ballGraphic.lineTo(34, 18);
+                    ballGraphic.moveTo(18, 2);
+                    ballGraphic.lineTo(18, 34);
+                    ballGraphic.strokePath();
+                    ballGraphic.generateTexture("freeThrowBall", 36, 36);
+                    ballGraphic.destroy();
+
+                    this.ball = this.physics.add.image(ballStart.x, ballStart.y, "freeThrowBall");
+                    this.ball.setCircle(16);
+                    this.ball.setBounce(0.48);
+                    this.ball.setDrag(55, 0);
+                    this.ball.setMaxVelocity(800, 800);
+                    this.physics.world.gravity.y = 590;
+
+                    const floor = this.add.rectangle(gameWidth / 2, 462, gameWidth, 24, 0x4d7c3b);
+                    this.physics.add.existing(floor, true);
+                    this.physics.add.collider(this.ball, floor, this.missShot, null, this);
+
+                    const backboard = this.add.rectangle(588, 205, 12, 82, 0xffffff, 0);
+                    this.physics.add.existing(backboard, true);
+                    this.physics.add.collider(this.ball, backboard, this.missShot, null, this);
+
+                    this.aimGraphics = this.add.graphics().setDepth(4);
+                    this.scoreText = this.add.text(gameWidth / 2, 50, "0", {
+                        fontFamily: "system-ui, sans-serif",
+                        fontSize: "42px",
+                        fontStyle: "bold",
+                        color: "#ffffff",
+                        stroke: "#0f1b2e",
+                        strokeThickness: 5
+                    }).setOrigin(0.5).setDepth(4);
+                    this.prompt = this.add.text(gameWidth / 2, 150, "DRAG BACK\nAND RELEASE TO SHOOT", {
+                        fontFamily: "system-ui, sans-serif",
+                        fontSize: "19px",
+                        fontStyle: "bold",
+                        align: "center",
+                        color: "#ffffff",
+                        stroke: "#0f1b2e",
+                        strokeThickness: 5
+                    }).setOrigin(0.5).setDepth(4);
+
+                    this.input.on("pointerdown", pointer => {
+                        if (this.shotActive || this.isDragging) return;
+                        if (Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, this.ball.x, this.ball.y) > 30) return;
+                        this.isDragging = true;
+                        this.drawAim(pointer);
+                        this.prompt.setVisible(false);
+                        document.getElementById("freeThrowStatus").textContent = "Release to shoot.";
+                    });
+                    this.input.on("pointermove", pointer => {
+                        if (this.isDragging) this.drawAim(pointer);
+                    });
+                    this.input.on("pointerup", pointer => {
+                        if (!this.isDragging) return;
+                        this.isDragging = false;
+                        this.aimGraphics.clear();
+                        const pullX = this.ball.x - pointer.worldX;
+                        const pullY = this.ball.y - pointer.worldY;
+                        const distance = Math.hypot(pullX, pullY);
+                        if (distance < 12) {
+                            document.getElementById("freeThrowStatus").textContent = "Pull farther back to shoot.";
+                            return;
+                        }
+
+                        const power = Math.min(distance, maxPull) * shotMultiplier;
+                        this.physics.world.resume();
+                        this.ball.body.reset(this.ball.x, this.ball.y);
+                        this.ball.setVelocity(pullX / distance * power, pullY / distance * power);
+                        this.previousBallY = this.ball.y;
+                        this.shotElapsed = 0;
+                        this.shotActive = true;
+                        document.getElementById("freeThrowStatus").textContent = "Shot in the air...";
+                    });
+
+                    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.removeAllListeners());
+                    document.getElementById("freeThrowStatus").textContent = "Drag back from the ball to aim and shoot.";
+                    this.physics.world.pause();
+                }
+
+                drawAim(pointer) {
+                    const pullX = this.ball.x - pointer.worldX;
+                    const pullY = this.ball.y - pointer.worldY;
+                    const distance = Math.hypot(pullX, pullY);
+                    if (distance < 1) return;
+                    const length = Math.min(distance, maxPull) * 0.65;
+                    const endX = this.ball.x + pullX / distance * length;
+                    const endY = this.ball.y + pullY / distance * length;
+                    this.aimGraphics.clear();
+                    this.aimGraphics.lineStyle(4, 0xffffff, 0.9);
+                    this.aimGraphics.beginPath();
+                    this.aimGraphics.moveTo(this.ball.x, this.ball.y);
+                    this.aimGraphics.lineTo(endX, endY);
+                    this.aimGraphics.strokePath();
+                    this.aimGraphics.fillStyle(0xffdf70, 1);
+                    this.aimGraphics.fillCircle(endX, endY, 6);
+                }
+
+                update(_time, delta) {
+                    if (!this.shotActive) return;
+                    this.shotElapsed += delta;
+                    const velocity = this.ball.body.velocity;
+                    const passedDownThroughRim = this.previousBallY < hoopY && this.ball.y >= hoopY;
+                    const betweenRimEdges = this.ball.x >= rimLeft + 18 && this.ball.x <= rimRight - 18;
+                    if (passedDownThroughRim && velocity.y > 0 && betweenRimEdges) {
+                        this.makeShot();
+                        return;
+                    }
+
+                    this.previousBallY = this.ball.y;
+                    if (this.shotElapsed > 4500 || this.ball.x > gameWidth + 35 || this.ball.y > gameHeight + 20 || this.ball.y < -25) {
+                        this.missShot();
+                    }
+                }
+
+                makeShot() {
+                    this.shotActive = false;
+                    this.makes++;
+                    this.streak++;
+                    this.ball.body.stop();
+                    this.ball.setPosition(rimRight + 8, hoopY + 25);
+                    this.physics.world.pause();
+                    this.scoreText.setText(this.streak);
+
+                    if (this.streak > freeThrowBestStreak) {
+                        freeThrowBestStreak = this.streak;
+                        localStorage.setItem("freeThrowBestStreak", this.streak);
+                        document.getElementById("freeThrowBest").textContent = this.streak;
+                    }
+                    document.getElementById("freeThrowStreak").textContent = this.streak;
+                    document.getElementById("freeThrowMakes").textContent = this.makes;
+                    document.getElementById("freeThrowStatus").textContent = `Swish! ${this.streak} in a row.`;
+                    this.time.delayedCall(650, () => this.resetBall());
+                }
+
+                missShot() {
+                    if (!this.shotActive) return;
+                    this.shotActive = false;
+                    this.streak = 0;
+                    this.physics.world.pause();
+                    document.getElementById("freeThrowStreak").textContent = "0";
+                    document.getElementById("freeThrowStatus").textContent = "Miss. Drag back to shoot again.";
+                    this.time.delayedCall(650, () => this.resetBall());
+                }
+
+                resetBall() {
+                    this.ball.setPosition(ballStart.x, ballStart.y);
+                    this.ball.body.reset(ballStart.x, ballStart.y);
+                    this.previousBallY = ballStart.y;
+                    this.physics.world.pause();
+                    this.prompt.setText("DRAG BACK\nAND RELEASE TO SHOOT").setVisible(true);
+                }
+
+                resetRound() {
+                    this.physics.world.resume();
+                    this.shotActive = false;
+                    this.isDragging = false;
+                    this.shotElapsed = 0;
+                    this.streak = 0;
+                    this.makes = 0;
+                    this.ball.setPosition(ballStart.x, ballStart.y);
+                    this.ball.body.reset(ballStart.x, ballStart.y);
+                    this.previousBallY = ballStart.y;
+                    this.aimGraphics.clear();
+                    this.scoreText.setText("0");
+                    this.prompt.setText("DRAG BACK\nAND RELEASE TO SHOOT").setVisible(true);
+                    this.physics.world.pause();
+                    document.getElementById("freeThrowStreak").textContent = "0";
+                    document.getElementById("freeThrowMakes").textContent = "0";
+                    document.getElementById("freeThrowStatus").textContent = "Drag back from the ball to aim and shoot.";
+                }
+            }
+
+            freeThrowGame = new Phaser.Game({
+                type: Phaser.AUTO,
+                width: gameWidth,
+                height: gameHeight,
+                parent: "freeThrowGameFrame",
+                backgroundColor: "#172a48",
+                scale: {
+                    mode: Phaser.Scale.FIT,
+                    autoCenter: Phaser.Scale.CENTER_BOTH
+                },
+                physics: {
+                    default: "arcade",
+                    arcade: { debug: false }
+                },
+                scene: FreeThrowScene
+            });
+        }
+
+        function resetFreeThrowChallenge() {
+            const scene = freeThrowGame?.scene.getScene("FreeThrowScene");
+            if (scene) scene.resetRound();
+        }
+
+        // Toast Helper
+        function showToast(message, iconClass = "fa-check-circle") {
+            const toast = document.getElementById("toast");
+            const toastMessage = document.getElementById("toastMessage");
+            const toastIcon = document.getElementById("toastIcon");
+
+            if (!toast || !toastMessage || !toastIcon) return;
+
+            toastMessage.textContent = message;
+            toastIcon.className = `fa-solid ${iconClass} text-brandCyan`;
+
+            toast.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+            toast.classList.add("opacity-100", "translate-y-0");
+
+            setTimeout(() => {
+                toast.classList.remove("opacity-100", "translate-y-0");
+                toast.classList.add("opacity-0", "pointer-events-none", "translate-y-4");
+            }, 2200);
+        }
+    </script>
+    <script type="module">
+        let bestTicTacToeMove = null;
+        let ticTacToeBoard = Array(9).fill(null);
+        let humanMark = "X";
+        let aiMark = "O";
+        let ticTacToeActive = true;
+        let aiThinking = false;
+        let winningLine = [];
+        let aiMoveTimer = null;
+        let roundId = 0;
+        const sessionScore = { wins: 0, draws: 0, losses: 0 };
+        const winningLines = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        const ticTacToeBoardElement = document.getElementById("tttBoard");
+        const ticTacToeStatus = document.getElementById("tttStatus");
+        const ticTacToeCells = [];
+
+        for (let index = 0; index < 9; index++) {
+            const cell = document.createElement("button");
+            cell.type = "button";
+            cell.className = "ttt-square";
+            cell.setAttribute("aria-label", `Row ${Math.floor(index / 3) + 1}, column ${index % 3 + 1}, empty`);
+            cell.addEventListener("click", () => playTicTacToeMove(index));
+            ticTacToeBoardElement.appendChild(cell);
+            ticTacToeCells.push(cell);
+        }
+
+        document.getElementById("tttNewGame").addEventListener("click", startTicTacToeGame);
+        document.querySelectorAll("[data-ttt-mark]").forEach(button => {
+            button.addEventListener("click", () => {
+                humanMark = button.dataset.tttMark;
+                aiMark = humanMark === "X" ? "O" : "X";
+                startTicTacToeGame();
+            });
+        });
+
+        import("https://esm.sh/@gamod/tic-tac-toe@0.1.0?bundle")
+            .then(engine => {
+                bestTicTacToeMove = engine.bestMove;
+                startTicTacToeGame();
+            })
+            .catch(() => {
+                ticTacToeStatus.textContent = "The AI could not load. Check your connection and try reloading the page.";
+                renderTicTacToeBoard();
+            });
+
+        function startTicTacToeGame() {
+            window.clearTimeout(aiMoveTimer);
+            roundId++;
+            ticTacToeBoard = Array(9).fill(null);
+            ticTacToeActive = true;
+            aiThinking = false;
+            winningLine = [];
+            document.querySelectorAll("[data-ttt-mark]").forEach(button => {
+                const selected = button.dataset.tttMark === humanMark;
+                button.setAttribute("aria-pressed", selected);
+                button.classList.toggle("bg-brandBlue", selected);
+                button.classList.toggle("text-white", selected);
+                button.classList.toggle("border", !selected);
+                button.classList.toggle("border-slate-300", !selected);
+                button.classList.toggle("text-slate-700", !selected);
+                button.classList.toggle("dark:border-slate-600", !selected);
+                button.classList.toggle("dark:text-slate-200", !selected);
+            });
+
+            if (!bestTicTacToeMove) {
+                ticTacToeStatus.textContent = "Loading AI...";
+                renderTicTacToeBoard();
+                return;
+            }
+
+            ticTacToeStatus.textContent = humanMark === "X" ? "Your turn. You are X." : "The AI is X and goes first.";
+            renderTicTacToeBoard();
+            if (humanMark === "O") makeTicTacToeAiMove(roundId);
+        }
+
+        function renderTicTacToeBoard() {
+            ticTacToeCells.forEach((cell, index) => {
+                const mark = ticTacToeBoard[index];
+                cell.textContent = mark || "";
+                cell.className = `ttt-square${mark ? ` ttt-square-${mark.toLowerCase()}` : ""}${winningLine.includes(index) ? " ttt-square-winning" : ""}`;
+                cell.disabled = !bestTicTacToeMove || !ticTacToeActive || aiThinking || Boolean(mark);
+                cell.setAttribute("aria-label", `Row ${Math.floor(index / 3) + 1}, column ${index % 3 + 1}, ${mark || "empty"}`);
+            });
+        }
+
+        function playTicTacToeMove(index) {
+            if (!bestTicTacToeMove || !ticTacToeActive || aiThinking || ticTacToeBoard[index]) return;
+            ticTacToeBoard[index] = humanMark;
+            if (finishTicTacToeIfOver(humanMark)) return;
+            aiThinking = true;
+            ticTacToeStatus.textContent = "AI is thinking...";
+            renderTicTacToeBoard();
+            makeTicTacToeAiMove(roundId);
+        }
+
+        function makeTicTacToeAiMove(currentRound) {
+            aiThinking = true;
+            renderTicTacToeBoard();
+            aiMoveTimer = window.setTimeout(() => {
+                if (currentRound !== roundId || !ticTacToeActive) return;
+                const move = bestTicTacToeMove({
+                    board: ticTacToeBoard.map(mark => mark ? mark.toLowerCase() : null),
+                    turn: aiMark.toLowerCase()
+                });
+                if (move === null) return;
+                ticTacToeBoard[move] = aiMark;
+                aiThinking = false;
+                if (finishTicTacToeIfOver(aiMark)) return;
+                ticTacToeStatus.textContent = "Your turn.";
+                renderTicTacToeBoard();
+            }, 350);
+        }
+
+        function finishTicTacToeIfOver(mark) {
+            const line = winningLines.find(cells => cells.every(index => ticTacToeBoard[index] === mark));
+            if (line) {
+                winningLine = line;
+                ticTacToeActive = false;
+                aiThinking = false;
+                if (mark === humanMark) {
+                    sessionScore.wins++;
+                    ticTacToeStatus.textContent = "You win!";
+                } else {
+                    sessionScore.losses++;
+                    ticTacToeStatus.textContent = "The AI wins this round.";
+                }
+                updateTicTacToeScore();
+                renderTicTacToeBoard();
+                return true;
+            }
+
+            if (ticTacToeBoard.every(Boolean)) {
+                ticTacToeActive = false;
+                aiThinking = false;
+                sessionScore.draws++;
+                ticTacToeStatus.textContent = "It's a draw.";
+                updateTicTacToeScore();
+                renderTicTacToeBoard();
+                return true;
+            }
+
+            renderTicTacToeBoard();
+            return false;
+        }
+
+        function updateTicTacToeScore() {
+            document.getElementById("tttWins").textContent = sessionScore.wins;
+            document.getElementById("tttDraws").textContent = sessionScore.draws;
+            document.getElementById("tttLosses").textContent = sessionScore.losses;
+        }
+    </script>
+    <script type="module">
+        const status = document.getElementById("chatConnectionStatus");
+        const messageList = document.getElementById("chatMessages");
+        const emptyState = document.getElementById("chatEmptyState");
+        const form = document.getElementById("chatForm");
+        const nameInput = document.getElementById("chatDisplayName");
+        const messageInput = document.getElementById("chatMessageInput");
+        const sendButton = document.getElementById("chatSendButton");
+        const characterCount = document.getElementById("chatCharacterCount");
+        const maxMessages = 50;
+        let chatConnected = false;
+
+        nameInput.value = localStorage.getItem("chatDisplayName") || "Guest";
+        messageInput.addEventListener("input", () => {
+            characterCount.textContent = `${messageInput.value.length} / 500`;
+        });
+        nameInput.addEventListener("input", () => {
+            localStorage.setItem("chatDisplayName", nameInput.value.trim().slice(0, 24));
+        });
+
+        if (location.protocol === "file:") {
+            status.textContent = "Start the chat server to connect";
+            emptyState.textContent = "Run python3 server.py, then open the local site address shown in the terminal.";
+        } else {
+            connectToChat();
+        }
+
+        function connectToChat() {
+            const eventStream = new EventSource("/api/chat/stream");
+            eventStream.addEventListener("open", () => {
+                chatConnected = true;
+                status.textContent = "Connected";
+                nameInput.disabled = false;
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+            });
+            eventStream.addEventListener("history", event => {
+                renderChatMessages(JSON.parse(event.data));
+            });
+            eventStream.addEventListener("message", event => {
+                const message = JSON.parse(event.data);
+                const knownMessages = [...messageList.querySelectorAll("[data-message-id]")].map(item => item.dataset.messageId);
+                if (!knownMessages.includes(message.id)) {
+                    appendChatMessage(message);
+                    while (messageList.querySelectorAll("[data-message-id]").length > maxMessages) {
+                        messageList.querySelector("[data-message-id]").remove();
+                    }
+                }
+            });
+            eventStream.addEventListener("error", () => {
+                chatConnected = false;
+                status.textContent = "Reconnecting to chat...";
+                nameInput.disabled = true;
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+            });
+        }
+
+        function renderChatMessages(messages) {
+            messageList.replaceChildren();
+            if (messages.length === 0) {
+                emptyState.textContent = "No messages yet. Start the conversation.";
+                messageList.appendChild(emptyState);
+                return;
+            }
+
+            messages.forEach(appendChatMessage);
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+
+        function appendChatMessage(message) {
+            emptyState.remove();
+            const item = document.createElement("li");
+            item.className = `chat-message${message.name === nameInput.value.trim() ? " chat-message-own" : ""}`;
+            item.dataset.messageId = message.id;
+
+            const meta = document.createElement("p");
+            meta.className = "mb-1 text-[11px] font-bold opacity-70";
+            const sentAt = new Date(message.createdAt);
+            const time = Number.isNaN(sentAt.getTime()) ? "Just now" : new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(sentAt);
+            meta.textContent = `${message.name} · ${time}`;
+
+            const body = document.createElement("p");
+            body.className = "whitespace-pre-wrap text-sm";
+            body.textContent = message.text;
+
+            item.append(meta, body);
+            messageList.appendChild(item);
+            messageList.scrollTop = messageList.scrollHeight;
+        }
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const name = nameInput.value.trim().slice(0, 24);
+            const text = messageInput.value.trim();
+            if (!name || !text || text.length > 500) return;
+
+            sendButton.disabled = true;
+            try {
+                const response = await fetch("/api/chat/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, text })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || "Message could not be sent");
+
+                messageInput.value = "";
+                characterCount.textContent = "0 / 500";
+                status.textContent = "Connected";
+            } catch (error) {
+                status.textContent = "Message could not be sent";
+                console.error("Chat message failed:", error);
+            } finally {
+                sendButton.disabled = !chatConnected;
+            }
+        });
+    </script>
+</body>
+</html>
